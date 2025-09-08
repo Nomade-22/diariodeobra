@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Controle de Equipes & Ferramentas</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a" />
+</head>
+<body>
+  <div id="view-login" class="container">
+    <div class="loginWrap card">
+      <h2>Entrar</h2>
+      <p class="small">Faça login para registrar saídas e retornos. (Modo local — sem servidor)</p>
+      <div class="row" style="grid-template-columns:1fr;gap:10px">
+        <div>
+          <label>Nome completo</label>
+          <input id="loginName" placeholder="Ex.: Maria Souza" />
+        </div>
+        <div>
+          <label>Identificação (opcional)</label>
+          <input id="loginId" placeholder="Ex.: 123 / matrícula" />
+        </div>
+        <div>
+          <label>Função (opcional)</label>
+          <select id="loginRole">
+            <option>Operação</option>
+            <option>Supervisor</option>
+            <option>Admin</option>
+          </select>
+        </div>
+        <button id="btnLogin" class="btn primary">Entrar</button>
+        <button id="btnLoginGoogle" class="btn">Entrar com Google (pré — Apps Script)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-app" class="hidden">
+    <div class="container">
+      <div class="header">
+        <div>
+          <div class="h1">Controle de Equipes & Ferramentas</div>
+          <div class="badge">PWA • GitHub Pages • Exporta CSV • Login</div>
+        </div>
+        <div class="headerUser">
+          <div class="avatar" id="avatar">U</div>
+          <div>
+            <div id="userName" class="small">Usuário</div>
+            <div class="small"><span id="userRole">Operação</span> — <a href="#" id="btnLogout" style="color:#9fb3d9">Sair</a></div>
+          </div>
+          <div>
+            <button id="btnExportAll" class="btn">Exportar CSV (Tudo)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="saida">Saída</button>
+        <button class="tab" data-tab="retorno">Retorno</button>
+        <button class="tab" data-tab="cadastros">Cadastros</button>
+      </div>
+
+      <section id="tab-saida" class="card" >
+        <h2>Registrar Saída</h2>
+        <div class="row" style="grid-template-columns:repeat(2,1fr);gap:10px">
+          <div>
+            <label>Equipe</label>
+            <select id="outTeam"></select>
+          </div>
+          <div>
+            <label>Motorista</label>
+            <input id="outDriver" placeholder="Nome do motorista" />
+          </div>
+          <div>
+            <label>Obra/Cliente</label>
+            <select id="outJobsite"></select>
+          </div>
+          <div>
+            <label>Veículo</label>
+            <input id="outVehicle" placeholder="Placa/Identificação" />
+          </div>
+          <div>
+            <label>KM (Saída)</label>
+            <input id="outKm" type="number" placeholder="Odômetro" />
+          </div>
+          <div>
+            <label>Horário de Saída</label>
+            <input id="outTime" type="datetime-local" />
+            <div class="small" id="outNow"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Observações</label>
+          <textarea id="outObs" placeholder="Condições, ferramentas especiais, etc."></textarea>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Assinatura do Responsável (Saída) — opcional agora</label>
+          <div style="display:flex;gap:10px;align-items:center">
+            <canvas id="outSign" class="signature" height="140"></canvas>
+            <button class="btn" data-clear="outSign">Limpar</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <h3>Ferramentas para este trabalho</h3>
+            <span class="small" id="selCount">0 selecionadas</span>
+          </div>
+          <div class="gridhead">
+            <div>OK</div><div>Ferramenta</div><div>Código</div><div>Qtd catálogo</div><div>Qtd levar</div>
+          </div>
+          <div id="pickList" class="list"></div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Foto rápida (opcional)</label>
+          <input id="outPhoto" type="file" accept="image/*" capture="environment" />
+          <div class="small" id="outPhotoCount">Nenhuma foto</div>
+        </div>
+
+        <div style="margin-top:10px">
+          <button id="btnCheckout" class="btn success">Confirmar Saída</button>
+        </div>
+      </section>
+
+      <section id="tab-retorno" class="card hidden">
+        <h2>Registrar Retorno</h2>
+        <div class="row" style="grid-template-columns:2fr 1fr 1fr;gap:10px">
+          <div>
+            <label>Saída em aberto</label>
+            <select id="retOpen"></select>
+          </div>
+          <div>
+            <label>KM (Retorno)</label>
+            <input id="retKm" type="number" />
+          </div>
+          <div>
+            <label>Horário de Retorno</label>
+            <input id="retTime" type="datetime-local" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <h3>Checklist de Retorno</h3>
+            <span id="retMissing" class="small"></span>
+          </div>
+          <div id="retList"></div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Observações gerais</label>
+          <textarea id="retNotes"></textarea>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Assinatura do Responsável (Retorno) — opcional agora</label>
+          <div style="display:flex;gap:10px;align-items:center">
+            <canvas id="retSign" class="signature" height="140"></canvas>
+            <button class="btn" data-clear="retSign">Limpar</button>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Foto do retorno (opcional)</label>
+          <input id="retPhoto" type="file" accept="image/*" capture="environment" />
+          <div class="small" id="retPhotoCount">Nenhuma foto</div>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+          <button id="btnExportReturn" class="btn">CSV do Retorno</button>
+          <button id="btnFinishReturn" class="btn success">Confirmar Retorno</button>
+        </div>
+      </section>
+
+      <section id="tab-cadastros" class="hidden">
+        <div class="row" style="gap:10px;grid-template-columns:repeat(3,1fr)">
+          <div class="card">
+            <h3>Ferramentas (Catálogo)</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span class="small" id="toolsCount">0 itens</span>
+              <button id="toolAdd" class="btn">Adicionar</button>
+            </div>
+            <div class="gridhead" style="grid-template-columns:1fr 160px 100px 1fr">
+              <div>Ferramenta</div><div>Código</div><div>Qtd</div><div>Obs</div>
+            </div>
+            <div id="toolsList" class="list"></div>
+          </div>
+          <div class="card">
+            <h3>Equipes</h3>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <input id="teamNew" placeholder="Nome da equipe" />
+              <button id="teamAdd" class="btn">Adicionar</button>
+            </div>
+            <ul id="teamsList"></ul>
+          </div>
+          <div class="card">
+            <h3>Obras/Clientes</h3>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <input id="jobNew" placeholder="Nome da obra/cliente" />
+              <button id="jobAdd" class="btn">Adicionar</button>
+            </div>
+            <ul id="jobsList"></ul>
+          </div>
+        </div>
+        <div class="card" style="margin-top:10px">
+          <h3>Relatórios Rápidos</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="btnExportOut" class="btn">CSV de Saídas</button>
+            <button id="btnExportRet" class="btn">CSV de Retornos</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="diag" class="chip">carregando…</div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

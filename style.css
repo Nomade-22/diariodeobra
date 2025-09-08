@@ -1,0 +1,35 @@
+
+:root {
+  --bg1:#0b1020; --bg2:#070a16; --panel:#10182e; --border:#24314f;
+  --text:#eaf2ff; --muted:#9fb3d9; --accent:#2563eb; --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+}
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;color:var(--text);
+     background:linear-gradient(to bottom,var(--bg1),var(--bg2));}
+.container{max-width:1100px;margin:0 auto;padding:16px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 8px}
+.h1{font-weight:800;font-size:22px}
+.badge{font-size:12px;color:var(--muted)}
+.btn{border:1px solid var(--border);background:#142046;color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}
+.btn.primary{background:#0f2a68;border-color:#1f3f87}
+.btn.success{background:#0e3a2a;border-color:#115e3f}
+.btn.warn{background:#3a2a0e;border-color:#6b4d0b}
+.btn.danger{background:#3a0e12;border-color:#7a1f25}
+.row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#0a1430;color:var(--text)}
+.small{font-size:12px;color:var(--muted)}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);margin-top:8px}
+.tab{padding:10px;border:1px solid var(--border);background:#0f1833;cursor:pointer}
+.tab.active{background:#18244a}
+.hidden{display:none}
+.gridhead{display:grid;grid-template-columns:40px 1fr 160px 110px 110px;gap:10px;font-size:12px;color:var(--muted);
+         border-bottom:1px solid var(--border);padding:8px}
+.gridrow{display:grid;grid-template-columns:40px 1fr 160px 110px 110px;gap:10px;align-items:center;border-bottom:1px solid var(--border);padding:8px 0}
+.list{max-height:260px;overflow:auto}
+.signature{background:#fff;border-radius:12px;border:1px solid #cbd5e1;width:100%}
+.chip{position:fixed;right:12px;bottom:12px;background:#152043;border:1px solid var(--border);padding:4px 8px;border-radius:8px;font-size:12px}
+.headerUser{display:flex;gap:8px;align-items:center}
+.avatar{width:28px;height:28px;border-radius:50%;background:#29365a;display:flex;align-items:center;justify-content:center;font-weight:700}
+.loginWrap{max-width:420px;margin:40px auto}
