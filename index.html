@@ -30,7 +30,7 @@
 <!-- SAÍDA -->
 <section id="tab-saida" class="rounded-xl border border-slate-800 p-4 bg-[var(--panel)] space-y-4">
   <h2 class="text-xl font-semibold">Registrar Saída</h2>
-  <div class="grid md-grid-cols-2 md:grid-cols-2 gap-4">
+  <div class="grid md:grid-cols-2 gap-4">
     <div>
       <label class="block text-sm text-slate-300">Equipe</label>
       <select id="outTeam" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700"></select>
@@ -187,6 +187,7 @@
 </section>
 
   </div>  <script>
+  window.addEventListener('DOMContentLoaded', () => {
     // ====== Storage ======
     const LS = { tools:'mp_tools_v1', teams:'mp_teams_v1', jobs:'mp_jobs_v1', outs:'mp_checkouts_v1', rets:'mp_returns_v1' };
     const read = (k,d)=>{ try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch{return d} };
@@ -217,18 +218,18 @@
     const outTeam=document.getElementById('outTeam');
     const outJob =document.getElementById('outJobsite');
     function fillSelect(sel,arr){ sel.innerHTML = '<option value="">Selecione...</option>'+arr.map(v=>`<option>${v}</option>`).join(''); }
-    function refreshBase(){ fillSelect(outTeam,teams); fillSelect(outJob,jobs); document.getElementById('toolsCount').textContent=`${tools.length} itens`; renderTools(); renderTeams(); renderJobs(); refreshOpenOuts(); renderPicker(); }
+    function refreshBase(){ fillSelect(outTeam,teams); fillSelect(outJob,jobs); const tcount=document.getElementById('toolsCount'); if(tcount) tcount.textContent=`${tools.length} itens`; renderTools(); renderTeams(); renderJobs(); refreshOpenOuts(); renderPicker(); }
 
     // ====== Signatures ======
     function Sig(el){ const c=el; const ctx=c.getContext('2d'); ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle='#0f172a'; const rect=()=>c.getBoundingClientRect(); let drawing=false; const pos=e=>{ const r=rect(); const x=(e.touches?.[0]?.clientX??e.clientX)-r.left; const y=(e.touches?.[0]?.clientY??e.clientY)-r.top; return {x,y}}; const start=e=>{drawing=true; ctx.beginPath(); const p=pos(e); ctx.moveTo(p.x,p.y)}; const move=e=>{ if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); }; const end=()=>{drawing=false}; c.addEventListener('mousedown',start); c.addEventListener('mousemove',move); window.addEventListener('mouseup',end); c.addEventListener('touchstart',start,{passive:true}); c.addEventListener('touchmove',move,{passive:true}); c.addEventListener('touchend',end); return { clear(){ctx.clearRect(0,0,c.width,c.height)}, data(){return c.toDataURL('image/png')} } }
-    const outTime=document.getElementById('outTime'); const outNow=document.getElementById('outNow'); outTime.value=new Date().toISOString().slice(0,16); outNow.textContent='Agora: '+fmtBR(new Date());
+    const outTime=document.getElementById('outTime'); const outNow=document.getElementById('outNow'); if(outTime){ outTime.value=new Date().toISOString().slice(0,16); } if(outNow){ outNow.textContent='Agora: '+fmtBR(new Date()); }
     const outSign=Sig(document.getElementById('outSign')); const retSign=Sig(document.getElementById('retSign'));
     document.querySelectorAll('[data-clear]').forEach(btn=> btn.addEventListener('click', ()=>{ (btn.dataset.clear==='outSign'?outSign:retSign).clear() }));
 
     // ====== Photos ======
     let outPhotos=[]; let retPhotos=[];
-    document.getElementById('outPhoto').addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const b64=await fileToDataURL(f); outPhotos.push(b64); document.getElementById('outPhotoCount').textContent=`${outPhotos.length} foto(s)`; });
-    document.getElementById('retPhoto').addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const b64=await fileToDataURL(f); retPhotos.push(b64); document.getElementById('retPhotoCount').textContent=`${retPhotos.length} foto(s)`; });
+    const outPhotoEl=document.getElementById('outPhoto'); if(outPhotoEl){ outPhotoEl.addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const b64=await fileToDataURL(f); outPhotos.push(b64); document.getElementById('outPhotoCount').textContent=`${outPhotos.length} foto(s)`; }); }
+    const retPhotoEl=document.getElementById('retPhoto'); if(retPhotoEl){ retPhotoEl.addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const b64=await fileToDataURL(f); retPhotos.push(b64); document.getElementById('retPhotoCount').textContent=`${retPhotos.length} foto(s)`; }); }
     function fileToDataURL(file){ return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file); }); }
 
     // ====== Tools CRUD ======
@@ -242,15 +243,15 @@
         iCode.addEventListener('input',()=>{ tools[idx].code=iCode.value; saveTools(); renderPicker(); });
         iQty.addEventListener('input', ()=>{ tools[idx].qty = parseInt(iQty.value||'1'); saveTools(); renderPicker(); });
         iObs.addEventListener('input', ()=>{ tools[idx].obs = iObs.value; saveTools(); });
-        host.appendChild(row); }); document.getElementById('toolsCount').textContent=`${tools.length} itens`; }
+        host.appendChild(row); }); const tcount=document.getElementById('toolsCount'); if(tcount) tcount.textContent=`${tools.length} itens`; }
     function saveTools(){ write(LS.tools, tools); }
-    document.getElementById('toolAdd').addEventListener('click', ()=>{ tools.push({id:uid(), name:'', code:'', qty:1, obs:''}); saveTools(); renderTools(); renderPicker(); });
+    const toolAdd=document.getElementById('toolAdd'); if(toolAdd){ toolAdd.addEventListener('click', ()=>{ tools.push({id:uid(), name:'', code:'', qty:1, obs:''}); saveTools(); renderTools(); renderPicker(); }); }
 
     // ====== Teams & Jobs ======
-    function renderTeams(){ const ul=document.getElementById('teamsList'); ul.innerHTML=''; teams.forEach((t,i)=>{ const li=document.createElement('li'); li.className='flex items-center gap-2'; li.innerHTML=`<input class='flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700' value="${t}"><button class='px-2 py-1 rounded bg-slate-700'>Excluir</button>`; const [inp,btn]=li.children; inp.addEventListener('input',()=>{teams[i]=inp.value; write(LS.teams,teams); refreshBase();}); btn.addEventListener('click',()=>{teams.splice(i,1); write(LS.teams,teams); refreshBase();}); ul.appendChild(li); }); }
-    function renderJobs(){ const ul=document.getElementById('jobsList'); ul.innerHTML=''; jobs.forEach((j,i)=>{ const li=document.createElement('li'); li.className='flex items-center gap-2'; li.innerHTML=`<input class='flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700' value="${j}"><button class='px-2 py-1 rounded bg-slate-700'>Excluir</button>`; const [inp,btn]=li.children; inp.addEventListener('input',()=>{jobs[i]=inp.value; write(LS.jobs,jobs); refreshBase();}); btn.addEventListener('click',()=>{jobs.splice(i,1); write(LS.jobs,jobs); refreshBase();}); ul.appendChild(li); }); }
-    document.getElementById('teamAdd').addEventListener('click',()=>{ const v=document.getElementById('teamNew').value.trim(); if(!v) return; teams.push(v); document.getElementById('teamNew').value=''; write(LS.teams,teams); refreshBase(); });
-    document.getElementById('jobAdd').addEventListener('click',()=>{ const v=document.getElementById('jobNew').value.trim(); if(!v) return; jobs.push(v); document.getElementById('jobNew').value=''; write(LS.jobs,jobs); refreshBase(); });
+    function renderTeams(){ const ul=document.getElementById('teamsList'); if(!ul) return; ul.innerHTML=''; teams.forEach((t,i)=>{ const li=document.createElement('li'); li.className='flex items-center gap-2'; li.innerHTML=`<input class='flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700' value="${t}"><button class='px-2 py-1 rounded bg-slate-700'>Excluir</button>`; const [inp,btn]=li.children; inp.addEventListener('input',()=>{teams[i]=inp.value; write(LS.teams,teams); refreshBase();}); btn.addEventListener('click',()=>{teams.splice(i,1); write(LS.teams,teams); refreshBase();}); ul.appendChild(li); }); }
+    function renderJobs(){ const ul=document.getElementById('jobsList'); if(!ul) return; ul.innerHTML=''; jobs.forEach((j,i)=>{ const li=document.createElement('li'); li.className='flex items-center gap-2'; li.innerHTML=`<input class='flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700' value="${j}"><button class='px-2 py-1 rounded bg-slate-700'>Excluir</button>`; const [inp,btn]=li.children; inp.addEventListener('input',()=>{jobs[i]=inp.value; write(LS.jobs,jobs); refreshBase();}); btn.addEventListener('click',()=>{jobs.splice(i,1); write(LS.jobs,jobs); refreshBase();}); ul.appendChild(li); }); }
+    const teamAdd=document.getElementById('teamAdd'); if(teamAdd){ teamAdd.addEventListener('click',()=>{ const v=document.getElementById('teamNew').value.trim(); if(!v) return; teams.push(v); document.getElementById('teamNew').value=''; write(LS.teams,teams); refreshBase(); }); }
+    const jobAdd=document.getElementById('jobAdd'); if(jobAdd){ jobAdd.addEventListener('click',()=>{ const v=document.getElementById('jobNew').value.trim(); if(!v) return; jobs.push(v); document.getElementById('jobNew').value=''; write(LS.jobs,jobs); refreshBase(); }); }
 
     // ====== Picker de ferramentas para a SAÍDA ======
     const pickHost = document.getElementById('pickList');
@@ -262,12 +263,254 @@
           <div class='col-span-2 text-sm'>${t.qty||1}</div>
           <div class='col-span-2'><input type='number' min='1' class='w-full px-2 py-1 rounded bg-slate-900 border border-slate-700' value='${st.take}' ${st.checked?'':'disabled'}></div>`;
         const [chk, qtyInput] = [row.querySelector('input[type="checkbox"]'), row.querySelector('input[type="number"]')];
-        chk.addEventListener('change',()=>{ st.checked=chk.checked; qtyInput.disabled=!st.checked; if(st.checked){ selected++; } else { selected=Math.max(0,selected-1); } updateSelCount(); });
+        chk.addEventListener('change',()=>{ st.checked=chk.checked; qtyInput.disabled=!st.checked; updateSelCount(); });
         qtyInput.addEventListener('input',()=>{ st.take = Math.max(1, parseInt(qtyInput.value||'1')); });
-        pickHost.appendChild(row); if(st.checked) selected++; }); updateSelCount(selected); }
-    function updateSelCount(curr){ const c=curr ?? Object.values(pickState).filter(v=>v.checked).length; document.getElementById('selCount').textContent = c+' selecionadas'; }
+        pickHost.appendChild(row); }); updateSelCount(); }
+    function updateSelCount(){ const c = Object.values(pickState).filter(v=>v.checked).length; const el=document.getElementById('selCount'); if(el) el.textContent = c+' selecionadas'; }
 
     // ====== Checkouts (Saída) ======
     function refreshOpenOuts(){ const sel=document.getElementById('retOpen'); if(!sel) return; const open=outs.filter(o=>!o.returnedAt); sel.innerHTML = open.length? '<option value="">Selecione...</option>'+open.map(o=>`<option value="${o.id}">${o.team} • ${o.job} • ${fmtBR(o.timeOut)}</option>`).join('') : '<option>Não há saídas em aberto</option>'; }
-    document.getElementById('btnCheckout').addEventListener('click', ()=>{
-      const id=uid(); const team=outTeam.value; const driver=document.getElementById('outDriver').value; const job=outJob.value; const vehicle=document.getElementById('outVehicle').value; const km=document.getElementById('outKm').value; const timeOut=new Date(document.getElementById('outTime').value).toISOString(); const obs=document.getElementById('outObs').value; const signatu
+    const btnCheckout=document.getElementById('btnCheckout'); if(btnCheckout){ btnCheckout.addEventListener('click', ()=>{
+      const id=uid(); const team=outTeam.value; const driver=document.getElementById('outDriver').value; const job=outJob.value; const vehicle=document.getElementById('outVehicle').value; const km=document.getElementById('outKm').value; const timeOut=new Date(document.getElementById('outTime').value).toISOString(); const obs=document.getElementById('outObs').value; const signature=outSign.data();
+      if(!team || !job){ alert('Informe Equipe e Obra/Cliente'); return }
+      const selected = Object.entries(pickState).filter(([,v])=>v.checked).map(([tid,v])=>{ const t=tools.find(x=>x.id===tid); return { id:uid(), toolId:tid, name:t?.name||'', code:t?.code||'', qty: v.take, obs:t?.obs||'' } });
+      if(selected.length===0){ if(!confirm('Nenhuma ferramenta selecionada. Confirmar saída mesmo assim?')) return; }
+      const rec={ id, team, driver, job, vehicle, kmStart:km, timeOut, obs, signature, photos: outPhotos.slice(), tools: selected, createdAt: nowIso() };
+      outs=[rec,...outs]; write(LS.outs,outs);
+      // prepara retorno
+      const checklist = selected.map(i=>({ ...i, status:'voltou', condition:'ok', notes:'' })); // status: 'voltou'|'ficou'|'nao_voltou'
+      currentReturn = { id, timeIn: nowIso(), kmEnd:'', notes:'', signature:null, photos:[], checklist };
+      alert('Saída registrada!');
+      // reset básicos
+      outPhotos=[]; const pc=document.getElementById('outPhotoCount'); if(pc) pc.textContent='Nenhuma foto'; outSign.clear(); document.getElementById('outDriver').value=''; document.getElementById('outVehicle').value=''; document.getElementById('outKm').value=''; document.getElementById('outObs').value=''; document.getElementById('outTime').value=new Date().toISOString().slice(0,16); pickState={}; renderPicker(); refreshOpenOuts();
+    }); }
+
+    // ====== Returns (Retorno) ======
+    let currentReturn=null; // objeto em edição
+    const retOpen=document.getElementById('retOpen'); if(retOpen){ retOpen.addEventListener('change',(e)=>{ const id=e.target.value; if(!id) return; const o=outs.find(x=>x.id===id); if(!o) return; currentReturn={ id:o.id, timeIn:new Date().toISOString(), kmEnd:'', notes:'', signature:null, photos:[], checklist: o.tools.map(i=>({ ...i, status:'voltou', condition:'ok', notes:'' })) }; document.getElementById('retTime').value=new Date().toISOString().slice(0,16); renderReturnList(); }); }
+
+    function renderReturnList(){ const host=document.getElementById('retList'); if(!host) return; host.innerHTML=''; if(!currentReturn){ const rm=document.getElementById('retMissing'); if(rm) rm.textContent=''; return; }
+      currentReturn.checklist.forEach((it,idx)=>{ const row=document.createElement('div'); row.className='grid grid-cols-12 gap-2 items-center p-2'; row.innerHTML=`
+          <div class='col-span-4 text-sm'>${it.name} <span class='text-slate-400'>(${it.code||'s/ código'})</span></div>
+          <div class='col-span-3'>
+            <select class='w-full px-2 py-1 rounded bg-slate-900 border border-slate-700'>
+              <option value='voltou' ${it.status==='voltou'?'selected':''}>Voltou</option>
+              <option value='ficou' ${it.status==='ficou'?'selected':''}>Ficou na obra</option>
+              <option value='nao_voltou' ${it.status==='nao_voltou'?'selected':''}>Não voltou</option>
+            </select>
+          </div>
+          <div class='col-span-2'>
+            <select class='w-full px-2 py-1 rounded bg-slate-900 border border-slate-700'>
+              <option value='ok' ${it.condition==='ok'?'selected':''}>OK</option>
+              <option value='avaria' ${it.condition==='avaria'?'selected':''}>Avaria</option>
+              <option value='manutencao' ${it.condition==='manutencao'?'selected':''}>Manutenção</option>
+            </select>
+          </div>
+          <input class='col-span-3 px-2 py-1 rounded bg-slate-900 border border-slate-700' placeholder='Problema/Observação' value='${it.notes||''}' />`;
+        const [selStatus, selCond, inpNote] = [row.children[1].children[0], row.children[2].children[0], row.children[3]];
+        selStatus.addEventListener('change',()=>{ currentReturn.checklist[idx].status = selStatus.value; updateMissing(); });
+        selCond.addEventListener('change', ()=>{ currentReturn.checklist[idx].condition = selCond.value; });
+        inpNote.addEventListener('input', ()=>{ currentReturn.checklist[idx].notes = inpNote.value; });
+        host.appendChild(row); }); updateMissing(); }
+    function updateMissing(){ const miss=currentReturn? currentReturn.checklist.filter(i=>i.status!=='voltou').length : 0; const rm=document.getElementById('retMissing'); if(rm) rm.textContent = miss + ' pendente(s)'; }
+
+    const btnFinish=document.getElementById('btnFinishReturn'); if(btnFinish){ btnFinish.addEventListener('click', ()=>{
+      if(!currentReturn){ alert('Selecione uma saída em aberto'); return }
+      currentReturn.kmEnd = document.getElementById('retKm').value;
+      currentReturn.timeIn = new Date(document.getElementById('retTime').value).toISOString();
+      currentReturn.signature = retSign.data();
+      currentReturn.photos = retPhotos.slice();
+      rets = [currentReturn, ...rets]; write(LS.rets, rets);
+      outs = outs.map(o=> o.id===currentReturn.id? ({...o, returnedAt: nowIso()}) : o); write(LS.outs, outs);
+      alert('Retorno registrado!');
+      // reset
+      currentReturn=null; retPhotos=[]; const pc=document.getElementById('retPhotoCount'); if(pc) pc.textContent='Nenhuma foto'; retSign.clear(); document.getElementById('retList').innerHTML=''; const rm=document.getElementById('retMissing'); if(rm) rm.textContent=''; refreshOpenOuts();
+    }); }
+
+    // ====== Exports ======
+    function rowsOut(){ return outs.map(c=>({ tipo:'saida', id:c.id, equipe:c.team, motorista:c.driver, obra:c.job, veiculo:c.vehicle, km_saida:c.kmStart, horario_saida:c.timeOut, obs_saida:c.obs, ferramentas:c.tools.map(t=>`${t.name}(${t.code||'-'})x${t.qty}`).join('; ') })) }
+    function rowsRet(){ return rets.flatMap(r=>{ const head=[{ tipo:'retorno', id:r.id, horario_retorno:r.timeIn, km_retorno:r.kmEnd, obs_retorno:r.notes, checklist_total:r.checklist.length, pendencias:r.checklist.filter(i=>i.status!=='voltou').length }]; const details=r.checklist.map(i=>({ tipo:'retorno_item', id:r.id, ferramenta:i.name, codigo:i.code, qty:i.qty, status:i.status, condicao:i.condition, obs_item:i.notes||'' })); return head.concat(details); }) }
+    const bea=document.getElementById('btnExportAll'); if(bea){ bea.addEventListener('click', ()=> downloadCSV('multprest_tudo', rowsOut().concat(rowsRet())) ); }
+    const beo=document.getElementById('btnExportOut'); if(beo){ beo.addEventListener('click', ()=> downloadCSV('multprest_saidas', rowsOut()) ); }
+    const ber=document.getElementById('btnExportRet'); if(ber){ ber.addEventListener('click', ()=> downloadCSV('multprest_retorno', rowsRet()) ); }
+    const ber2=document.getElementById('btnExportReturn'); if(ber2){ ber2.addEventListener('click', ()=> downloadCSV('multprest_retorno', rowsRet()) ); }
+
+    // ====== Init ======
+    refreshBase();
+  });
+</script>  <div id="diag" class="fixed bottom-3 right-3 text-xs px-2 py-1 rounded bg-slate-800/80 border border-slate-700">carregando…</div>
+  <script>
+    // ======== MODO SEGURO (robusto) ========
+    (function(){
+      const chip = document.getElementById('diag');
+      const say = (t)=>{ if (chip) chip.textContent = t }
+      try {
+        say('iniciando…');
+        // Storage seguro
+        const LS = { tools:'mp_tools_v1', teams:'mp_teams_v1', jobs:'mp_jobs_v1', outs:'mp_checkouts_v1', rets:'mp_returns_v1' };
+        const read = (k,d)=>{ try{ const v = JSON.parse(localStorage.getItem(k)||'null'); return (Array.isArray(d) && !Array.isArray(v))? d : (v ?? d) }catch{return d} };
+        const write = (k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
+        const uid = ()=> Math.random().toString(36).slice(2)+Date.now().toString(36);// Estado com saneamento
+    let tools = read(LS.tools, []);
+    let teams = read(LS.teams, ["Equipe 1","Equipe 2"]);
+    let jobs  = read(LS.jobs,  ["JBS","BRF","Obra Interna"]);
+    let outs  = read(LS.outs,  []);
+    let rets  = read(LS.rets,  []);
+    if(!Array.isArray(teams) || teams.length===0) teams=["Equipe 1","Equipe 2"]; // fallback
+    if(!Array.isArray(jobs)  || jobs.length===0)  jobs =["JBS","BRF","Obra Interna"];
+
+    // Helpers
+    const nowIso = ()=> new Date().toISOString();
+    const fmtBR  = (d)=> new Date(d).toLocaleString('pt-BR');
+    const esc = (v)=>{ if(v==null) return ''; const s=String(v).replaceAll('"','""'); return '"'+s+'"' };
+    const toCSV = (rows)=> rows.length? [Object.keys(rows[0]).map(esc).join(',')].concat(rows.map(r=>Object.keys(rows[0]).map(h=>esc(r[h])).join(','))).join('
+
+'):''; const downloadCSV=(name,rows)=>{ const csv=toCSV(rows); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name+'_'+new Date().toISOString().slice(0,19).replaceAll(':','-')+'.csv'; a.click(); };
+
+// Elementos
+    const sections={ saida:document.getElementById('tab-saida'), retorno:document.getElementById('tab-retorno'), cadastros:document.getElementById('tab-cadastros') };
+    const outTeam=document.getElementById('outTeam');
+    const outJob =document.getElementById('outJobsite');
+    const btnCheckout=document.getElementById('btnCheckout');
+    const btnFinish=document.getElementById('btnFinishReturn');
+
+    // Abas (delegação)
+    document.body.addEventListener('click',(ev)=>{
+      const tabBtn = ev.target.closest('.tab');
+      if(tabBtn){
+        document.querySelectorAll('.tab').forEach(b=>b.classList.remove('bg-[var(--panel)]'));
+        tabBtn.classList.add('bg-[var(--panel)]');
+        Object.values(sections).forEach(s=> s.classList.add('hidden'));
+        sections[tabBtn.dataset.tab]?.classList.remove('hidden');
+        say('aba: '+tabBtn.dataset.tab);
+      }
+    });
+
+    // Selects base
+    function fillSelect(sel, arr){ if(!sel) return; sel.innerHTML='<option value="">Selecione...</option>'+arr.map(v=>`<option>${v}</option>`).join(''); }
+
+    // Assinatura
+    function Sig(el){ const c=el; const ctx=c.getContext('2d'); ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle='#0f172a'; let drawing=false; const pos=e=>{ const r=c.getBoundingClientRect(); const x=(e.touches?.[0]?.clientX??e.clientX)-r.left; const y=(e.touches?.[0]?.clientY??e.clientY)-r.top; return {x,y}}; const start=e=>{drawing=true; ctx.beginPath(); const p=pos(e); ctx.moveTo(p.x,p.y)}; const move=e=>{ if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); }; const end=()=>{ drawing=false }; c.addEventListener('mousedown',start); c.addEventListener('mousemove',move); window.addEventListener('mouseup',end); c.addEventListener('touchstart',start,{passive:true}); c.addEventListener('touchmove',move,{passive:true}); c.addEventListener('touchend',end); return { clear(){ctx.clearRect(0,0,c.width,c.height)}, data(){return c.toDataURL('image/png')} } }
+    const outTime=document.getElementById('outTime'); if(outTime) outTime.value=new Date().toISOString().slice(0,16);
+    const outNow=document.getElementById('outNow'); if(outNow) outNow.textContent='Agora: '+fmtBR(new Date());
+    const outSign=Sig(document.getElementById('outSign'));
+    const retSign=Sig(document.getElementById('retSign'));
+    document.querySelectorAll('[data-clear]').forEach(btn=> btn.addEventListener('click', ()=>{ (btn.dataset.clear==='outSign'?outSign:retSign).clear() }));
+
+    // Fotos
+    let outPhotos=[], retPhotos=[];
+    const outPhotoEl=document.getElementById('outPhoto'); if(outPhotoEl){ outPhotoEl.addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const b64=await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f); }); outPhotos.push(b64); const pc=document.getElementById('outPhotoCount'); if(pc) pc.textContent=`${outPhotos.length} foto(s)`; }); }
+    const retPhotoEl=document.getElementById('retPhoto'); if(retPhotoEl){ retPhotoEl.addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const b64=await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f); }); retPhotos.push(b64); const pc=document.getElementById('retPhotoCount'); if(pc) pc.textContent=`${retPhotos.length} foto(s)`; }); }
+
+    // CRUD Ferramentas
+    function renderTools(){ const host=document.getElementById('toolsList'); if(!host) return; host.innerHTML=''; tools.forEach((t,idx)=>{ if(!t.id) t.id=uid(); const row=document.createElement('div'); row.className='grid grid-cols-12 gap-2 items-center p-2 border-b border-slate-800'; row.innerHTML=`
+        <input class="col-span-4 px-2 py-1 rounded bg-slate-900 border border-slate-700" value="${t.name||''}" placeholder="Ferramenta" />
+        <input class="col-span-3 px-2 py-1 rounded bg-slate-900 border border-slate-700" value="${t.code||''}" placeholder="Código/ID" />
+        <input type="number" min="1" class="col-span-2 px-2 py-1 rounded bg-slate-900 border border-slate-700" value="${t.qty||1}" placeholder="Qtd" />
+        <input class="col-span-3 px-2 py-1 rounded bg-slate-900 border border-slate-700" value="${t.obs||''}" placeholder="Obs" />`;
+      const [iName,iCode,iQty,iObs]=row.querySelectorAll('input');
+      iName.addEventListener('input',()=>{ tools[idx].name=iName.value; write(LS.tools,tools); renderPicker(); });
+      iCode.addEventListener('input',()=>{ tools[idx].code=iCode.value; write(LS.tools,tools); renderPicker(); });
+      iQty.addEventListener('input', ()=>{ tools[idx].qty = parseInt(iQty.value||'1'); write(LS.tools,tools); renderPicker(); });
+      iObs.addEventListener('input', ()=>{ tools[idx].obs = iObs.value; write(LS.tools,tools); });
+      host.appendChild(row); }); const tcount=document.getElementById('toolsCount'); if(tcount) tcount.textContent=`${tools.length} itens`; }
+    const toolAdd=document.getElementById('toolAdd'); if(toolAdd){ toolAdd.addEventListener('click', ()=>{ tools.push({id:uid(), name:'', code:'', qty:1, obs:''}); write(LS.tools,tools); renderTools(); renderPicker(); }); }
+
+    // Equipes e Obras
+    function renderTeams(){ const ul=document.getElementById('teamsList'); if(!ul) return; ul.innerHTML=''; teams.forEach((t,i)=>{ const li=document.createElement('li'); li.className='flex items-center gap-2'; li.innerHTML=`<input class='flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700' value="${t}"><button class='px-2 py-1 rounded bg-slate-700'>Excluir</button>`; const [inp,btn]=li.children; inp.addEventListener('input',()=>{teams[i]=inp.value; write(LS.teams,teams); refreshBase();}); btn.addEventListener('click',()=>{teams.splice(i,1); write(LS.teams,teams); refreshBase();}); ul.appendChild(li); }); }
+    function renderJobs(){ const ul=document.getElementById('jobsList'); if(!ul) return; ul.innerHTML=''; jobs.forEach((j,i)=>{ const li=document.createElement('li'); li.className='flex items-center gap-2'; li.innerHTML=`<input class='flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700' value="${j}"><button class='px-2 py-1 rounded bg-slate-700'>Excluir</button>`; const [inp,btn]=li.children; inp.addEventListener('input',()=>{jobs[i]=inp.value; write(LS.jobs,jobs); refreshBase();}); btn.addEventListener('click',()=>{jobs.splice(i,1); write(LS.jobs,jobs); refreshBase();}); ul.appendChild(li); }); }
+    const teamAdd=document.getElementById('teamAdd'); if(teamAdd){ teamAdd.addEventListener('click',()=>{ const v=document.getElementById('teamNew').value.trim(); if(!v) return; teams.push(v); document.getElementById('teamNew').value=''; write(LS.teams,teams); refreshBase(); }); }
+    const jobAdd=document.getElementById('jobAdd'); if(jobAdd){ jobAdd.addEventListener('click',()=>{ const v=document.getElementById('jobNew').value.trim(); if(!v) return; jobs.push(v); document.getElementById('jobNew').value=''; write(LS.jobs,jobs); refreshBase(); }); }
+
+    // Picker de ferramentas (Saída)
+    const pickHost=document.getElementById('pickList');
+    let pickState={};
+    function renderPicker(){ if(!pickHost) return; pickHost.innerHTML=''; tools.forEach(t=>{ if(!t.id) t.id=uid(); const st=pickState[t.id]||{checked:false, take: Math.min(1, t.qty||1)}; pickState[t.id]=st; const row=document.createElement('div'); row.className='grid grid-cols-12 gap-2 items-center p-2 border-b border-slate-800'; row.innerHTML=`
+        <div class='col-span-1 text-center'><input type='checkbox' ${st.checked?'checked':''}></div>
+        <div class='col-span-4 text-sm'>${t.name||''}</div>
+        <div class='col-span-3 text-sm text-slate-300'>${t.code||''}</div>
+        <div class='col-span-2 text-sm'>${t.qty||1}</div>
+        <div class='col-span-2'><input type='number' min='1' class='w-full px-2 py-1 rounded bg-slate-900 border border-slate-700' value='${st.take}' ${st.checked?'':'disabled'}></div>`;
+      const [chk, qtyInput] = [row.querySelector('input[type="checkbox"]'), row.querySelector('input[type="number"]')];
+      chk.addEventListener('change',()=>{ st.checked=chk.checked; qtyInput.disabled=!st.checked; updateSelCount(); });
+      qtyInput.addEventListener('input',()=>{ st.take = Math.max(1, parseInt(qtyInput.value||'1')); });
+      pickHost.appendChild(row); }); updateSelCount(); }
+    function updateSelCount(){ const c = Object.values(pickState).filter(v=>v.checked).length; const el=document.getElementById('selCount'); if(el) el.textContent = c+' selecionadas'; }
+
+    // Saída
+    function refreshOpenOuts(){ const sel=document.getElementById('retOpen'); if(!sel) return; const open=outs.filter(o=>!o.returnedAt); sel.innerHTML = open.length? '<option value="">Selecione...</option>'+open.map(o=>`<option value="${o.id}">${o.team} • ${o.job} • ${fmtBR(o.timeOut)}</option>`).join('') : '<option>Não há saídas em aberto</option>'; }
+    if(btnCheckout){ btnCheckout.addEventListener('click', ()=>{
+      const id=uid(); const team=outTeam?.value||''; const driver=document.getElementById('outDriver').value; const job=outJob?.value||''; const vehicle=document.getElementById('outVehicle').value; const km=document.getElementById('outKm').value; const timeOut=new Date(document.getElementById('outTime').value).toISOString(); const obs=document.getElementById('outObs').value; const signature=document.getElementById('outSign')? outSign.data(): null;
+      if(!team || !job){ alert('Informe Equipe e Obra/Cliente'); return }
+      const selected = Object.entries(pickState).filter(([,v])=>v.checked).map(([tid,v])=>{ const t=tools.find(x=>x.id===tid); return { id:uid(), toolId:tid, name:t?.name||'', code:t?.code||'', qty: v.take, obs:t?.obs||'' } });
+      if(selected.length===0){ if(!confirm('Nenhuma ferramenta selecionada. Confirmar saída mesmo assim?')) return; }
+      const rec={ id, team, driver, job, vehicle, kmStart:km, timeOut, obs, signature, photos: outPhotos.slice(), tools: selected, createdAt: nowIso() };
+      outs=[rec,...outs]; write(LS.outs,outs);
+      currentReturn = { id, timeIn: nowIso(), kmEnd:'', notes:'', signature:null, photos:[], checklist: selected.map(i=>({ ...i, status:'voltou', condition:'ok', notes:'' })) };
+      alert('Saída registrada!');
+      outPhotos=[]; const pc=document.getElementById('outPhotoCount'); if(pc) pc.textContent='Nenhuma foto'; if(outSign) outSign.clear(); document.getElementById('outDriver').value=''; document.getElementById('outVehicle').value=''; document.getElementById('outKm').value=''; document.getElementById('outObs').value=''; document.getElementById('outTime').value=new Date().toISOString().slice(0,16); pickState={}; renderPicker(); refreshOpenOuts();
+    }); }
+
+    // Retorno
+    let currentReturn=null; const retOpen=document.getElementById('retOpen'); if(retOpen){ retOpen.addEventListener('change',(e)=>{ const id=e.target.value; if(!id) return; const o=outs.find(x=>x.id===id); if(!o) return; currentReturn={ id:o.id, timeIn:new Date().toISOString(), kmEnd:'', notes:'', signature:null, photos:[], checklist: o.tools.map(i=>({ ...i, status:'voltou', condition:'ok', notes:'' })) }; document.getElementById('retTime').value=new Date().toISOString().slice(0,16); renderReturnList(); }); }
+    function renderReturnList(){ const host=document.getElementById('retList'); if(!host) return; host.innerHTML=''; if(!currentReturn){ const rm=document.getElementById('retMissing'); if(rm) rm.textContent=''; return; }
+      currentReturn.checklist.forEach((it,idx)=>{ const row=document.createElement('div'); row.className='grid grid-cols-12 gap-2 items-center p-2'; row.innerHTML=`
+          <div class='col-span-4 text-sm'>${it.name} <span class='text-slate-400'>(${it.code||'s/ código'})</span></div>
+          <div class='col-span-3'>
+            <select class='w-full px-2 py-1 rounded bg-slate-900 border border-slate-700'>
+              <option value='voltou' ${it.status==='voltou'?'selected':''}>Voltou</option>
+              <option value='ficou' ${it.status==='ficou'?'selected':''}>Ficou na obra</option>
+              <option value='nao_voltou' ${it.status==='nao_voltou'?'selected':''}>Não voltou</option>
+            </select>
+          </div>
+          <div class='col-span-2'>
+            <select class='w-full px-2 py-1 rounded bg-slate-900 border border-slate-700'>
+              <option value='ok' ${it.condition==='ok'?'selected':''}>OK</option>
+              <option value='avaria' ${it.condition==='avaria'?'selected':''}>Avaria</option>
+              <option value='manutencao' ${it.condition==='manutencao'?'selected':''}>Manutenção</option>
+            </select>
+          </div>
+          <input class='col-span-3 px-2 py-1 rounded bg-slate-900 border border-slate-700' placeholder='Problema/Observação' value='${it.notes||''}' />`;
+        const [selStatus, selCond, inpNote] = [row.children[1].children[0], row.children[2].children[0], row.children[3]];
+        selStatus.addEventListener('change',()=>{ currentReturn.checklist[idx].status = selStatus.value; updateMissing(); });
+        selCond.addEventListener('change', ()=>{ currentReturn.checklist[idx].condition = selCond.value; });
+        inpNote.addEventListener('input', ()=>{ currentReturn.checklist[idx].notes = inpNote.value; });
+        host.appendChild(row); }); updateMissing(); }
+    function updateMissing(){ const miss=currentReturn? currentReturn.checklist.filter(i=>i.status!=='voltou').length : 0; const rm=document.getElementById('retMissing'); if(rm) rm.textContent = miss + ' pendente(s)'; }
+    if(btnFinish){ btnFinish.addEventListener('click', ()=>{
+      if(!currentReturn){ alert('Selecione uma saída em aberto'); return }
+      currentReturn.kmEnd = document.getElementById('retKm').value;
+      currentReturn.timeIn = new Date(document.getElementById('retTime').value).toISOString();
+      currentReturn.signature = retSign.data();
+      currentReturn.photos = retPhotos.slice();
+      rets = [currentReturn, ...rets]; write(LS.rets, rets);
+      outs = outs.map(o=> o.id===currentReturn.id? ({...o, returnedAt: nowIso()}) : o); write(LS.outs, outs);
+      alert('Retorno registrado!');
+      currentReturn=null; retPhotos=[]; const pc=document.getElementById('retPhotoCount'); if(pc) pc.textContent='Nenhuma foto'; retSign.clear(); document.getElementById('retList').innerHTML=''; const rm=document.getElementById('retMissing'); if(rm) rm.textContent=''; refreshOpenOuts();
+    }); }
+
+    // Exports
+    function rowsOut(){ return outs.map(c=>({ tipo:'saida', id:c.id, equipe:c.team, motorista:c.driver, obra:c.job, veiculo:c.vehicle, km_saida:c.kmStart, horario_saida:c.timeOut, obs_saida:c.obs, ferramentas:c.tools.map(t=>`${t.name}(${t.code||'-'})x${t.qty}`).join('; ') })) }
+    function rowsRet(){ return rets.flatMap(r=>{ const head=[{ tipo:'retorno', id:r.id, horario_retorno:r.timeIn, km_retorno:r.kmEnd, obs_retorno:r.notes, checklist_total:r.checklist.length, pendencias:r.checklist.filter(i=>i.status!=='voltou').length }]; const details=r.checklist.map(i=>({ tipo:'retorno_item', id:r.id, ferramenta:i.name, codigo:i.code, qty:i.qty, status:i.status, condicao:i.condition, obs_item:i.notes||'' })); return head.concat(details); }) }
+    const bea=document.getElementById('btnExportAll'); if(bea){ bea.addEventListener('click', ()=> downloadCSV('multprest_tudo', rowsOut().concat(rowsRet())) ); }
+    const beo=document.getElementById('btnExportOut'); if(beo){ beo.addEventListener('click', ()=> downloadCSV('multprest_saidas', rowsOut()) ); }
+    const ber=document.getElementById('btnExportRet'); if(ber){ ber.addEventListener('click', ()=> downloadCSV('multprest_retorno', rowsRet()) ); }
+    const ber2=document.getElementById('btnExportReturn'); if(ber2){ ber2.addEventListener('click', ()=> downloadCSV('multprest_retorno', rowsRet()) ); }
+
+    // Inicializa
+    fillSelect(outTeam, teams);
+    fillSelect(outJob,  jobs);
+    renderTools();
+    renderTeams();
+    renderJobs();
+    refreshOpenOuts();
+    renderPicker();
+    say('pronto');
+  } catch (e) {
+    say('erro: '+ (e && (e.message||e.toString())));
+  }
+})();
+
+  </script>
+</body>
+</html>
