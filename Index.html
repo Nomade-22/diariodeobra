@@ -1,0 +1,273 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Controle de Equipes & Ferramentas • Multprest</title>
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="theme-color" content="#0f172a" />
+  <style>
+    :root{--panel:rgba(15,23,42,.7)}
+    canvas.signature{background:#fff;border-radius:12px;border:1px solid #cbd5e1}
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-100">
+  <div class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
+    <header class="flex items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold">Controle de Equipes & Ferramentas</h1>
+        <p class="text-slate-300">Funciona no navegador + Exporta CSV • Pronto para GitHub Pages</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnExportAll" class="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-500">Exportar CSV (Tudo)</button>
+      </div>
+    </header><nav class="grid grid-cols-3 w-full">
+  <button data-tab="saida" class="tab px-3 py-2 border border-slate-700 bg-[var(--panel)]">Saída</button>
+  <button data-tab="retorno" class="tab px-3 py-2 border border-slate-700">Retorno</button>
+  <button data-tab="cadastros" class="tab px-3 py-2 border border-slate-700">Cadastros</button>
+</nav>
+
+<!-- SAÍDA -->
+<section id="tab-saida" class="rounded-xl border border-slate-800 p-4 bg-[var(--panel)] space-y-4">
+  <h2 class="text-xl font-semibold">Registrar Saída</h2>
+  <div class="grid md-grid-cols-2 md:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-slate-300">Equipe</label>
+      <select id="outTeam" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700"></select>
+    </div>
+    <div>
+      <label class="block text-sm text-slate-300">Motorista</label>
+      <input id="outDriver" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Nome do motorista" />
+    </div>
+    <div>
+      <label class="block text-sm text-slate-300">Obra/Cliente</label>
+      <select id="outJobsite" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700"></select>
+    </div>
+    <div>
+      <label class="block text-sm text-slate-300">Veículo</label>
+      <input id="outVehicle" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Placa/Identificação" />
+    </div>
+    <div>
+      <label class="block text-sm text-slate-300">KM (Saída)</label>
+      <input id="outKm" type="number" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Odômetro" />
+    </div>
+    <div>
+      <label class="block text-sm text-slate-300">Horário de Saída</label>
+      <input id="outTime" type="datetime-local" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" />
+      <p class="text-xs text-slate-400" id="outNow"></p>
+    </div>
+  </div>
+  <div>
+    <label class="block text-sm text-slate-300">Observações</label>
+    <textarea id="outObs" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Condições, ferramentas especiais, etc."></textarea>
+  </div>
+  <div>
+    <label class="block text-sm text-slate-300 mb-2">Assinatura do Responsável (Saída)</label>
+    <div class="flex items-center gap-2">
+      <canvas id="outSign" class="signature w-full" height="160"></canvas>
+      <button class="px-3 py-2 rounded-lg bg-slate-700" data-clear="outSign">Limpar</button>
+    </div>
+  </div>
+
+  <!-- NOVO: Seleção de Ferramentas da Saída -->
+  <div class="space-y-3">
+    <div class="flex items-center justify-between">
+      <h3 class="font-medium">Ferramentas para este trabalho</h3>
+      <span class="text-sm text-slate-300" id="selCount">0 selecionadas</span>
+    </div>
+    <div class="rounded-xl border border-slate-800">
+      <div class="grid grid-cols-12 gap-2 p-2 text-xs text-slate-400 border-b border-slate-800">
+        <div class="col-span-1 text-center">OK</div>
+        <div class="col-span-4">Ferramenta</div>
+        <div class="col-span-3">Código</div>
+        <div class="col-span-2">Qtd catálogo</div>
+        <div class="col-span-2">Qtd levar</div>
+      </div>
+      <div id="pickList" class="max-h-72 overflow-auto"></div>
+    </div>
+  </div>
+
+  <div>
+    <label class="block text-sm text-slate-300 mb-1">Foto rápida (opcional)</label>
+    <input id="outPhoto" type="file" accept="image/*" capture="environment" />
+    <p class="text-xs text-slate-400" id="outPhotoCount">Nenhuma foto</p>
+  </div>
+  <div>
+    <button id="btnCheckout" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500">Confirmar Saída</button>
+  </div>
+</section>
+
+<!-- RETORNO -->
+<section id="tab-retorno" class="hidden rounded-xl border border-slate-800 p-4 bg-[var(--panel)] space-y-4">
+  <h2 class="text-xl font-semibold">Registrar Retorno</h2>
+  <div class="grid md:grid-cols-3 gap-4 items-end">
+    <div>
+      <label class="block text-sm text-slate-300">Saída em aberto</label>
+      <select id="retOpen" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700"></select>
+    </div>
+    <div>
+      <label class="block text-sm text-slate-300">KM (Retorno)</label>
+      <input id="retKm" type="number" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" />
+    </div>
+    <div>
+      <label class="block text-sm text-slate-300">Horário de Retorno</label>
+      <input id="retTime" type="datetime-local" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" />
+    </div>
+  </div>
+  <div>
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-medium">Checklist de Retorno</h3>
+      <span id="retMissing" class="text-sm text-slate-300"></span>
+    </div>
+    <div id="retList" class="rounded-xl border border-slate-800 divide-y divide-slate-800"></div>
+  </div>
+  <div>
+    <label class="block text-sm text-slate-300">Observações gerais</label>
+    <textarea id="retNotes" class="w-full mt-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700"></textarea>
+  </div>
+  <div>
+    <label class="block text-sm text-slate-300 mb-2">Assinatura do Responsável (Retorno)</label>
+    <div class="flex items-center gap-2">
+      <canvas id="retSign" class="signature w-full" height="160"></canvas>
+      <button class="px-3 py-2 rounded-lg bg-slate-700" data-clear="retSign">Limpar</button>
+    </div>
+  </div>
+  <div>
+    <label class="block text-sm text-slate-300 mb-1">Foto do retorno (opcional)</label>
+    <input id="retPhoto" type="file" accept="image/*" capture="environment" />
+    <p class="text-xs text-slate-400" id="retPhotoCount">Nenhuma foto</p>
+  </div>
+  <div class="flex justify-end gap-2">
+    <button id="btnExportReturn" class="px-4 py-2 rounded-lg bg-slate-700">CSV do Retorno</button>
+    <button id="btnFinishReturn" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500">Confirmar Retorno</button>
+  </div>
+</section>
+
+<!-- CADASTROS -->
+<section id="tab-cadastros" class="hidden space-y-4">
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="rounded-xl border border-slate-800 p-4 bg-[var(--panel)]">
+      <h3 class="font-semibold mb-3">Ferramentas (Catálogo)</h3>
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm text-slate-300" id="toolsCount">0 itens</span>
+        <button id="toolAdd" class="px-3 py-1.5 rounded-lg bg-slate-700">Adicionar</button>
+      </div>
+      <div class="grid grid-cols-12 gap-2 p-2 text-xs text-slate-400 border border-slate-800 rounded-lg">
+        <div class="col-span-4">Ferramenta</div>
+        <div class="col-span-3">Código</div>
+        <div class="col-span-2">Qtd</div>
+        <div class="col-span-3">Obs</div>
+      </div>
+      <div id="toolsList" class="max-h-72 overflow-auto rounded-lg border border-slate-800 mt-2"></div>
+    </div>
+    <div class="rounded-xl border border-slate-800 p-4 bg-[var(--panel)]">
+      <h3 class="font-semibold mb-3">Equipes</h3>
+      <div class="flex gap-2 mb-2">
+        <input id="teamNew" class="flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Nome da equipe" />
+        <button id="teamAdd" class="px-3 py-2 rounded-lg bg-slate-700">Adicionar</button>
+      </div>
+      <ul id="teamsList" class="space-y-2"></ul>
+    </div>
+    <div class="rounded-xl border border-slate-800 p-4 bg-[var(--panel)]">
+      <h3 class="font-semibold mb-3">Obras/Clientes</h3>
+      <div class="flex gap-2 mb-2">
+        <input id="jobNew" class="flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Nome da obra/cliente" />
+        <button id="jobAdd" class="px-3 py-2 rounded-lg bg-slate-700">Adicionar</button>
+      </div>
+      <ul id="jobsList" class="space-y-2"></ul>
+    </div>
+  </div>
+  <div class="rounded-xl border border-slate-800 p-4 bg-[var(--panel)]">
+    <h3 class="font-semibold mb-3">Relatórios Rápidos</h3>
+    <div class="flex flex-wrap gap-2">
+      <button id="btnExportOut" class="px-3 py-2 rounded-lg bg-slate-700">CSV de Saídas</button>
+      <button id="btnExportRet" class="px-3 py-2 rounded-lg bg-slate-700">CSV de Retornos</button>
+    </div>
+  </div>
+</section>
+
+  </div>  <script>
+    // ====== Storage ======
+    const LS = { tools:'mp_tools_v1', teams:'mp_teams_v1', jobs:'mp_jobs_v1', outs:'mp_checkouts_v1', rets:'mp_returns_v1' };
+    const read = (k,d)=>{ try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch{return d} };
+    const write = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
+    const uid = ()=> Math.random().toString(36).slice(2)+Date.now().toString(36);
+
+    // ====== State ======
+    let tools = read(LS.tools, []);
+    let teams = read(LS.teams, ["Equipe 1","Equipe 2"]);
+    let jobs  = read(LS.jobs,  ["JBS","BRF","Obra Interna"]);
+    let outs  = read(LS.outs,  []);
+    let rets  = read(LS.rets,  []);
+
+    // ====== Helpers ======
+    const nowIso = ()=> new Date().toISOString();
+    const fmtBR = (d)=> new Date(d).toLocaleString('pt-BR');
+    const esc = (v)=>{ if(v==null) return ''; const s=String(v).replaceAll('"','""'); return '"'+s+'"' };
+    const toCSV = (rows)=> rows.length? [Object.keys(rows[0]).map(esc).join(',')].concat(rows.map(r=>Object.keys(rows[0]).map(h=>esc(r[h])).join(','))).join('
+'):'';
+    const downloadCSV=(name,rows)=>{ const csv=toCSV(rows); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name+'_'+new Date().toISOString().slice(0,19).replaceAll(':','-')+'.csv'; a.click(); };
+
+    // ====== Tabs ======
+    const tabs=document.querySelectorAll('.tab');
+    const sections={ saida:document.getElementById('tab-saida'), retorno:document.getElementById('tab-retorno'), cadastros:document.getElementById('tab-cadastros') };
+    tabs.forEach(btn=> btn.addEventListener('click', ()=>{ tabs.forEach(b=>b.classList.remove('bg-[var(--panel)]')); btn.classList.add('bg-[var(--panel)]'); Object.values(sections).forEach(s=>s.classList.add('hidden')); sections[btn.dataset.tab].classList.remove('hidden'); }));
+
+    // ====== Populate selects ======
+    const outTeam=document.getElementById('outTeam');
+    const outJob =document.getElementById('outJobsite');
+    function fillSelect(sel,arr){ sel.innerHTML = '<option value="">Selecione...</option>'+arr.map(v=>`<option>${v}</option>`).join(''); }
+    function refreshBase(){ fillSelect(outTeam,teams); fillSelect(outJob,jobs); document.getElementById('toolsCount').textContent=`${tools.length} itens`; renderTools(); renderTeams(); renderJobs(); refreshOpenOuts(); renderPicker(); }
+
+    // ====== Signatures ======
+    function Sig(el){ const c=el; const ctx=c.getContext('2d'); ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle='#0f172a'; const rect=()=>c.getBoundingClientRect(); let drawing=false; const pos=e=>{ const r=rect(); const x=(e.touches?.[0]?.clientX??e.clientX)-r.left; const y=(e.touches?.[0]?.clientY??e.clientY)-r.top; return {x,y}}; const start=e=>{drawing=true; ctx.beginPath(); const p=pos(e); ctx.moveTo(p.x,p.y)}; const move=e=>{ if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); }; const end=()=>{drawing=false}; c.addEventListener('mousedown',start); c.addEventListener('mousemove',move); window.addEventListener('mouseup',end); c.addEventListener('touchstart',start,{passive:true}); c.addEventListener('touchmove',move,{passive:true}); c.addEventListener('touchend',end); return { clear(){ctx.clearRect(0,0,c.width,c.height)}, data(){return c.toDataURL('image/png')} } }
+    const outTime=document.getElementById('outTime'); const outNow=document.getElementById('outNow'); outTime.value=new Date().toISOString().slice(0,16); outNow.textContent='Agora: '+fmtBR(new Date());
+    const outSign=Sig(document.getElementById('outSign')); const retSign=Sig(document.getElementById('retSign'));
+    document.querySelectorAll('[data-clear]').forEach(btn=> btn.addEventListener('click', ()=>{ (btn.dataset.clear==='outSign'?outSign:retSign).clear() }));
+
+    // ====== Photos ======
+    let outPhotos=[]; let retPhotos=[];
+    document.getElementById('outPhoto').addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const b64=await fileToDataURL(f); outPhotos.push(b64); document.getElementById('outPhotoCount').textContent=`${outPhotos.length} foto(s)`; });
+    document.getElementById('retPhoto').addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const b64=await fileToDataURL(f); retPhotos.push(b64); document.getElementById('retPhotoCount').textContent=`${retPhotos.length} foto(s)`; });
+    function fileToDataURL(file){ return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(file); }); }
+
+    // ====== Tools CRUD ======
+    function renderTools(){ const host=document.getElementById('toolsList'); if(!host) return; host.innerHTML=''; tools.forEach((t,idx)=>{ const row=document.createElement('div'); row.className='grid grid-cols-12 gap-2 items-center p-2 border-b border-slate-800'; row.innerHTML=`
+          <input class="col-span-4 px-2 py-1 rounded bg-slate-900 border border-slate-700" value="${t.name||''}" placeholder="Ferramenta" />
+          <input class="col-span-3 px-2 py-1 rounded bg-slate-900 border border-slate-700" value="${t.code||''}" placeholder="Código/ID" />
+          <input type="number" min="1" class="col-span-2 px-2 py-1 rounded bg-slate-900 border border-slate-700" value="${t.qty||1}" placeholder="Qtd" />
+          <input class="col-span-3 px-2 py-1 rounded bg-slate-900 border border-slate-700" value="${t.obs||''}" placeholder="Obs" />`;
+        const [iName,iCode,iQty,iObs]=row.querySelectorAll('input');
+        iName.addEventListener('input',()=>{ tools[idx].name=iName.value; saveTools(); renderPicker(); });
+        iCode.addEventListener('input',()=>{ tools[idx].code=iCode.value; saveTools(); renderPicker(); });
+        iQty.addEventListener('input', ()=>{ tools[idx].qty = parseInt(iQty.value||'1'); saveTools(); renderPicker(); });
+        iObs.addEventListener('input', ()=>{ tools[idx].obs = iObs.value; saveTools(); });
+        host.appendChild(row); }); document.getElementById('toolsCount').textContent=`${tools.length} itens`; }
+    function saveTools(){ write(LS.tools, tools); }
+    document.getElementById('toolAdd').addEventListener('click', ()=>{ tools.push({id:uid(), name:'', code:'', qty:1, obs:''}); saveTools(); renderTools(); renderPicker(); });
+
+    // ====== Teams & Jobs ======
+    function renderTeams(){ const ul=document.getElementById('teamsList'); ul.innerHTML=''; teams.forEach((t,i)=>{ const li=document.createElement('li'); li.className='flex items-center gap-2'; li.innerHTML=`<input class='flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700' value="${t}"><button class='px-2 py-1 rounded bg-slate-700'>Excluir</button>`; const [inp,btn]=li.children; inp.addEventListener('input',()=>{teams[i]=inp.value; write(LS.teams,teams); refreshBase();}); btn.addEventListener('click',()=>{teams.splice(i,1); write(LS.teams,teams); refreshBase();}); ul.appendChild(li); }); }
+    function renderJobs(){ const ul=document.getElementById('jobsList'); ul.innerHTML=''; jobs.forEach((j,i)=>{ const li=document.createElement('li'); li.className='flex items-center gap-2'; li.innerHTML=`<input class='flex-1 px-3 py-2 rounded-lg bg-slate-900 border border-slate-700' value="${j}"><button class='px-2 py-1 rounded bg-slate-700'>Excluir</button>`; const [inp,btn]=li.children; inp.addEventListener('input',()=>{jobs[i]=inp.value; write(LS.jobs,jobs); refreshBase();}); btn.addEventListener('click',()=>{jobs.splice(i,1); write(LS.jobs,jobs); refreshBase();}); ul.appendChild(li); }); }
+    document.getElementById('teamAdd').addEventListener('click',()=>{ const v=document.getElementById('teamNew').value.trim(); if(!v) return; teams.push(v); document.getElementById('teamNew').value=''; write(LS.teams,teams); refreshBase(); });
+    document.getElementById('jobAdd').addEventListener('click',()=>{ const v=document.getElementById('jobNew').value.trim(); if(!v) return; jobs.push(v); document.getElementById('jobNew').value=''; write(LS.jobs,jobs); refreshBase(); });
+
+    // ====== Picker de ferramentas para a SAÍDA ======
+    const pickHost = document.getElementById('pickList');
+    let pickState = {}; // { toolId: { checked:boolean, take:number } }
+    function renderPicker(){ if(!pickHost) return; pickHost.innerHTML=''; let selected=0; tools.forEach(t=>{ const id=t.id||(t.id=uid()); const st=pickState[id]||{checked:false, take: Math.min(1, t.qty||1)}; pickState[id]=st; const row=document.createElement('div'); row.className='grid grid-cols-12 gap-2 items-center p-2 border-b border-slate-800'; row.innerHTML=`
+          <div class='col-span-1 text-center'><input type='checkbox' ${st.checked?'checked':''}></div>
+          <div class='col-span-4 text-sm'>${t.name||''}</div>
+          <div class='col-span-3 text-sm text-slate-300'>${t.code||''}</div>
+          <div class='col-span-2 text-sm'>${t.qty||1}</div>
+          <div class='col-span-2'><input type='number' min='1' class='w-full px-2 py-1 rounded bg-slate-900 border border-slate-700' value='${st.take}' ${st.checked?'':'disabled'}></div>`;
+        const [chk, qtyInput] = [row.querySelector('input[type="checkbox"]'), row.querySelector('input[type="number"]')];
+        chk.addEventListener('change',()=>{ st.checked=chk.checked; qtyInput.disabled=!st.checked; if(st.checked){ selected++; } else { selected=Math.max(0,selected-1); } updateSelCount(); });
+        qtyInput.addEventListener('input',()=>{ st.take = Math.max(1, parseInt(qtyInput.value||'1')); });
+        pickHost.appendChild(row); if(st.checked) selected++; }); updateSelCount(selected); }
+    function updateSelCount(curr){ const c=curr ?? Object.values(pickState).filter(v=>v.checked).length; document.getElementById('selCount').textContent = c+' selecionadas'; }
+
+    // ====== Checkouts (Saída) ======
+    function refreshOpenOuts(){ const sel=document.getElementById('retOpen'); if(!sel) return; const open=outs.filter(o=>!o.returnedAt); sel.innerHTML = open.length? '<option value="">Selecione...</option>'+open.map(o=>`<option value="${o.id}">${o.team} • ${o.job} • ${fmtBR(o.timeOut)}</option>`).join('') : '<option>Não há saídas em aberto</option>'; }
+    document.getElementById('btnCheckout').addEventListener('click', ()=>{
+      const id=uid(); const team=outTeam.value; const driver=document.getElementById('outDriver').value; const job=outJob.value; const vehicle=document.getElementById('outVehicle').value; const km=document.getElementById('outKm').value; const timeOut=new Date(document.getElementById('outTime').value).toISOString(); const obs=document.getElementById('outObs').value; const signatu
