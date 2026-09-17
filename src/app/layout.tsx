@@ -4,8 +4,8 @@ import "./global.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-	title: "Anything App",
-	description: "Created with Anything",
+	title: "Diário de Obra",
+	description: "Controle de atividades e relatórios de obra",
 	icons: {
 		icon: "/favicon.png",
 	},
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="pt-BR">
 			<head>
 				<link
 					rel="stylesheet"
