@@ -1,28 +1,27 @@
+import { put } from "@vercel/blob";
 import { NextResponse, type NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-interface PlatformUploadResponse {
-  url?: string;
-  publicUrl?: string;
-  mimeType?: string | null;
-  externalId?: string | null;
+function sanitizeFilename(name: string) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "") || "foto";
 }
 
 /**
  * POST /api/upload
  *
- * The original worker put the file straight into the `R2_BUCKET` binding and
- * returned the object key. On Anything there is no direct object-storage
- * access, so this route forwards the multipart body to the same-origin internal
- * upload endpoint and returns the resulting public URL.
- *
- * `key` is kept in the response body (now holding the public URL) because the
- * existing callers — DiaryForm/EditRegistroModal `uploadFile()` — read
- * `data.key` and persist it into `registros.foto_*_key`.
+ * Salva as fotos do Diário de Obra no Vercel Blob e devolve a URL pública.
+ * O frontend continua recebendo `key`, preservando o contrato da aplicação
+ * original, mas agora o valor salvo em registros.foto_*_key é uma URL pública.
  */
 export async function POST(req: NextRequest) {
   let formData: FormData;
+
   try {
     formData = await req.formData();
   } catch {
@@ -30,42 +29,36 @@ export async function POST(req: NextRequest) {
   }
 
   const file = formData.get("file");
+
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const forwarded = new FormData();
-  forwarded.append("file", file, file.name || "upload");
+  if (file.size === 0) {
+    return NextResponse.json({ error: "Arquivo vazio" }, { status: 400 });
+  }
 
-  const uploadRes = await fetch(new URL("/_create/api/upload", req.url), {
-    method: "POST",
-    body: forwarded,
-  });
+  try {
+    const safeName = sanitizeFilename(file.name || "foto");
+    const pathname = `registros/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
 
-  if (!uploadRes.ok) {
-    const detail = await uploadRes.text().catch(() => "");
-    console.error("Upload failed:", uploadRes.status, detail);
+    const blob = await put(pathname, file, {
+      access: "public",
+      contentType: file.type || undefined,
+    });
+
+    return NextResponse.json({
+      key: blob.url,
+      url: blob.url,
+      mimeType: blob.contentType ?? file.type ?? null,
+      filename: file.name || null,
+      externalId: blob.pathname,
+    });
+  } catch (error) {
+    console.error("Vercel Blob upload failed:", error);
     return NextResponse.json(
       { error: "Falha ao enviar arquivo" },
-      { status: uploadRes.status === 413 ? 413 : 502 }
+      { status: 500 }
     );
   }
-
-  const data = (await uploadRes
-    .json()
-    .catch(() => null)) as PlatformUploadResponse | null;
-
-  const url = data?.url ?? data?.publicUrl ?? null;
-  if (!url) {
-    console.error("Upload endpoint returned no url", data);
-    return NextResponse.json({ error: "Falha ao enviar arquivo" }, { status: 502 });
-  }
-
-  return NextResponse.json({
-    key: url,
-    url,
-    mimeType: data?.mimeType ?? (file.type || null),
-    filename: file.name || null,
-    externalId: data?.externalId ?? null,
-  });
 }
