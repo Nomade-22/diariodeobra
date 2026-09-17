@@ -12,6 +12,7 @@ import {
   UserCog,
   LogOut,
   Loader2,
+  FileText,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -51,6 +52,7 @@ export default function Layout({
   const navItems = [
     { path: '/', label: 'Novo Registro', icon: ClipboardList, adminOnly: false },
     { path: '/historico', label: 'Histórico', icon: History, adminOnly: true },
+    { path: '/relatorios', label: 'Relatórios', icon: FileText, adminOnly: true },
     { path: '/funcionarios', label: 'Funcionários', icon: Users, adminOnly: false },
     { path: '/clientes', label: 'Clientes', icon: Building2, adminOnly: false },
     { path: '/usuarios', label: 'Usuários', icon: UserCog, adminOnly: true },
@@ -65,7 +67,6 @@ export default function Layout({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-xl border-b border-primary/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -79,7 +80,6 @@ export default function Layout({
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-1">
               {visibleNavItems.map((item) => {
                 const Icon = item.icon;
@@ -88,7 +88,7 @@ export default function Layout({
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    className={`flex items-center gap-2 px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 ${
                       isActive
                         ? 'bg-white/20 text-white font-medium shadow-sm'
                         : 'text-white/75 hover:text-white hover:bg-white/10'
@@ -101,7 +101,6 @@ export default function Layout({
               })}
             </nav>
 
-            {/* User info & Logout (Desktop) */}
             <div className="hidden md:flex items-center gap-3">
               {user && (
                 <span className="text-sm text-white/70">
@@ -122,7 +121,6 @@ export default function Layout({
               </Button>
             </div>
 
-            {/* Mobile menu button */}
             <button
               className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -132,11 +130,9 @@ export default function Layout({
           </div>
         </div>
 
-        {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <nav className="md:hidden border-t border-white/10 pb-4 bg-primary/50 backdrop-blur-sm">
             <div className="px-4 pt-2 space-y-1">
-              {/* User info (Mobile) */}
               {user && (
                 <div className="px-4 py-3 border-b border-white/10 mb-2">
                   <p className="text-white font-medium">{user.nome || user.username}</p>
@@ -168,7 +164,6 @@ export default function Layout({
                 );
               })}
 
-              {/* Logout (Mobile) */}
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
@@ -184,7 +179,6 @@ export default function Layout({
         )}
       </header>
 
-      {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
     </div>
   );
