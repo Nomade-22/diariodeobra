@@ -1,0 +1,38 @@
+name: Bootstrap Next.js rebuild
+
+on:
+  push:
+    branches:
+      - rebuild-nextjs
+    paths:
+      - ".github/workflows/bootstrap-nextjs.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild repository contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/diario-bootstrap /tmp/diario-unpack
+          cat payload.part.* > /tmp/diario-bootstrap/payload.b64
+          base64 -d /tmp/diario-bootstrap/payload.b64 > /tmp/diario-bootstrap/payload.tar.gz
+          tar -tzf /tmp/diario-bootstrap/payload.tar.gz >/dev/null
+          tar -xzf /tmp/diario-bootstrap/payload.tar.gz -C /tmp/diario-unpack
+
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
+          cp -a /tmp/diario-unpack/. .
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Recriar Diário de Obra em Next.js mantendo o design"
+          git push origin HEAD:rebuild-nextjs
