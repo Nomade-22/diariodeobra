@@ -13,9 +13,6 @@ import {
   Printer,
   RefreshCw,
   Loader2,
-  CalendarDays,
-  Building2,
-  Users,
   Image as ImageIcon,
   ClipboardCheck,
 } from 'lucide-react';
@@ -29,6 +26,8 @@ type ReportPhoto = {
 
 type ReportDraft = {
   title: string;
+  reportNumber: string;
+  ofNumber: string;
   period: string;
   client: string;
   responsible: string;
@@ -37,6 +36,8 @@ type ReportDraft = {
   schedule: string;
   activities: string;
   observations: string;
+  signatureName: string;
+  signatureRole: string;
   recordCount: number;
   photos: ReportPhoto[];
 };
@@ -63,6 +64,51 @@ function buildSchedule(registros: Registro[]): string {
   if (!arrivals.length && !departures.length) return 'Não informado';
   if (arrivals.length && departures.length) return `${arrivals[0]} às ${departures[departures.length - 1]}`;
   return arrivals[0] || departures[departures.length - 1] || 'Não informado';
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < items.length; i += size) result.push(items.slice(i, i + size));
+  return result;
+}
+
+function makeReportNumber(dates: string[]): string {
+  const compact = (value: string) => value.replaceAll('-', '');
+  if (!dates.length) return `RDO-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}`;
+  if (dates.length === 1) return `RDO-${compact(dates[0])}`;
+  return `RDO-${compact(dates[0])}-${compact(dates[dates.length - 1])}`;
+}
+
+function ReportLetterhead({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <section className={`report-sheet relative bg-white text-slate-900 overflow-hidden ${className}`}>
+      <img
+        src="/folha-timbrada-multprest.webp"
+        alt="Folha timbrada Multprest"
+        className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none"
+      />
+      <div className="relative z-10 report-content">{children}</div>
+    </section>
+  );
+}
+
+function SummaryRow({ label, value, rightLabel, rightValue }: { label: string; value: string; rightLabel?: string; rightValue?: string }) {
+  return (
+    <div className="grid grid-cols-2 border-b border-slate-300 last:border-b-0">
+      <div className="px-3 py-2 border-r border-slate-300">
+        <span className="text-[9px] uppercase tracking-wide font-semibold text-slate-500">{label}</span>
+        <div className="text-[11px] font-medium whitespace-pre-wrap break-words">{value || '—'}</div>
+      </div>
+      <div className="px-3 py-2">
+        {rightLabel ? (
+          <>
+            <span className="text-[9px] uppercase tracking-wide font-semibold text-slate-500">{rightLabel}</span>
+            <div className="text-[11px] font-medium whitespace-pre-wrap break-words">{rightValue || '—'}</div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export default function RelatoriosPage() {
@@ -117,13 +163,10 @@ export default function RelatoriosPage() {
     });
 
     const dates = unique(sorted.map((r) => r.data)).sort();
-    const clientsFound = unique(
-      sorted.map((r) => r.cliente_nome || r.of_customer_name || null)
-    );
-    const teamNames = unique(
-      sorted.flatMap((r) => r.funcionarios?.map((f) => f.nome) || [])
-    );
+    const clientsFound = unique(sorted.map((r) => r.cliente_nome || r.of_customer_name || null));
+    const teamNames = unique(sorted.flatMap((r) => r.funcionarios?.map((f) => f.nome) || []));
     const responsibleNames = unique(sorted.map((r) => r.created_by || null));
+    const ofNumbers = unique(sorted.map((r) => r.of_number || null));
 
     const period = dates.length === 0
       ? 'Não informado'
@@ -133,12 +176,8 @@ export default function RelatoriosPage() {
 
     const activities = sorted
       .map((r, index) => {
-        const of = r.of_number
-          ? ` — OF ${r.of_number}${r.of_title ? ` - ${r.of_title}` : ''}`
-          : '';
-        const time = r.chegada || r.saida
-          ? ` (${r.chegada || '—'} às ${r.saida || '—'})`
-          : '';
+        const of = r.of_number ? ` — OF ${r.of_number}${r.of_title ? ` - ${r.of_title}` : ''}` : '';
+        const time = r.chegada || r.saida ? ` (${r.chegada || '—'} às ${r.saida || '—'})` : '';
         return `${index + 1}. ${r.trabalho || 'Atividade sem descrição'}${of}${time}`;
       })
       .join('\n');
@@ -163,16 +202,22 @@ export default function RelatoriosPage() {
       });
     });
 
+    const responsible = responsibleNames.length ? responsibleNames.join(', ') : 'Não informado';
+
     setDraft({
       title: 'RELATÓRIO DIÁRIO DE OBRA',
+      reportNumber: makeReportNumber(dates),
+      ofNumber: ofNumbers.length ? ofNumbers.join(', ') : 'Não informado',
       period,
       client: clientsFound.length ? clientsFound.join(', ') : 'Não informado',
-      responsible: responsibleNames.length ? responsibleNames.join(', ') : 'Não informado',
+      responsible,
       team: teamNames.length ? teamNames.join(', ') : 'Não informado',
       headcount: teamNames.length,
       schedule: buildSchedule(sorted),
       activities: activities || 'Nenhuma atividade encontrada para os filtros selecionados.',
       observations: observations || 'Sem observações.',
+      signatureName: responsible === 'Não informado' ? '' : responsible,
+      signatureRole: 'Responsável pela obra',
       recordCount: sorted.length,
       photos,
     });
@@ -195,6 +240,8 @@ export default function RelatoriosPage() {
   };
 
   const isLoading = loadingRegistros || loadingFuncionarios || loadingClientes;
+  const selectedPhotos = draft?.photos.filter((photo) => photo.include) || [];
+  const photoPages = chunk(selectedPhotos, 4);
 
   if (isLoading) {
     return (
@@ -209,23 +256,52 @@ export default function RelatoriosPage() {
   return (
     <Layout adminOnly>
       <style jsx global>{`
+        .report-sheet {
+          width: 210mm;
+          min-height: 297mm;
+          margin: 0 auto;
+          box-shadow: 0 16px 45px rgba(15, 23, 42, 0.14);
+        }
+        .report-content {
+          padding: 68mm 16mm 18mm 22mm;
+          min-height: 297mm;
+        }
+        .report-preline { white-space: pre-line; }
+
         @media print {
-          @page { size: A4; margin: 12mm; }
-          body { background: white !important; }
+          @page { size: A4 portrait; margin: 0; }
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
           body * { visibility: hidden !important; }
           .report-print-area, .report-print-area * { visibility: visible !important; }
           .report-print-area {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
-            width: 100% !important;
+            width: 210mm !important;
             margin: 0 !important;
             padding: 0 !important;
-            border: 0 !important;
-            box-shadow: none !important;
           }
-          .report-photo-block { break-inside: avoid; page-break-inside: avoid; }
-          .report-section { break-inside: avoid; page-break-inside: avoid; }
+          .report-sheet {
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            break-after: page;
+            page-break-after: always;
+          }
+          .report-sheet:last-child {
+            break-after: auto;
+            page-break-after: auto;
+          }
+          .report-content {
+            padding: 68mm 16mm 18mm 22mm !important;
+          }
+          .report-photo-block,
+          .report-section {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
         }
       `}</style>
 
@@ -236,7 +312,7 @@ export default function RelatoriosPage() {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-foreground">Relatórios</h2>
-            <p className="text-muted-foreground">Filtre os registros, ajuste o conteúdo e exporte o relatório.</p>
+            <p className="text-muted-foreground">Filtre os registros, ajuste o conteúdo e exporte na folha timbrada da Multprest.</p>
           </div>
         </div>
 
@@ -290,9 +366,7 @@ export default function RelatoriosPage() {
                 <strong className="text-foreground">{filteredRegistros.length}</strong> registro(s) encontrado(s)
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={clearFilters}>
-                  Limpar filtros
-                </Button>
+                <Button variant="outline" onClick={clearFilters}>Limpar filtros</Button>
                 <Button onClick={generateDraft} disabled={filteredRegistros.length === 0} className="gap-2">
                   <RefreshCw className="w-4 h-4" />
                   Gerar / Atualizar relatório
@@ -321,6 +395,16 @@ export default function RelatoriosPage() {
                   <label className="space-y-1.5 md:col-span-2">
                     <span className="text-sm font-medium">Título</span>
                     <Input value={draft.title} onChange={(e) => updateDraft('title', e.target.value)} />
+                  </label>
+
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">Nº do relatório</span>
+                    <Input value={draft.reportNumber} onChange={(e) => updateDraft('reportNumber', e.target.value)} />
+                  </label>
+
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">OF / OS</span>
+                    <Input value={draft.ofNumber} onChange={(e) => updateDraft('ofNumber', e.target.value)} />
                   </label>
 
                   <label className="space-y-1.5">
@@ -367,21 +451,31 @@ export default function RelatoriosPage() {
                     <span className="text-sm font-medium">Observações</span>
                     <textarea className={textareaClass} value={draft.observations} onChange={(e) => updateDraft('observations', e.target.value)} />
                   </label>
+
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">Nome para assinatura</span>
+                    <Input value={draft.signatureName} onChange={(e) => updateDraft('signatureName', e.target.value)} />
+                  </label>
+
+                  <label className="space-y-1.5">
+                    <span className="text-sm font-medium">Cargo / função da assinatura</span>
+                    <Input value={draft.signatureRole} onChange={(e) => updateDraft('signatureRole', e.target.value)} />
+                  </label>
                 </div>
 
                 {draft.photos.length > 0 && (
                   <div className="space-y-3 border-t pt-4">
                     <div className="flex items-center gap-2 font-medium">
                       <ImageIcon className="w-4 h-4 text-primary" />
-                      Fotos para exportação
+                      Fotos incluídas no relatório
                     </div>
-                    <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {draft.photos.map((photo) => (
-                        <label key={photo.id} className={`border rounded-lg overflow-hidden cursor-pointer ${photo.include ? 'border-primary' : 'opacity-50'}`}>
-                          <img src={photo.src} alt={photo.label} className="w-full h-28 object-cover bg-muted" />
-                          <div className="p-2 flex items-center gap-2 text-xs">
+                        <label key={photo.id} className={`rounded-lg border p-2 cursor-pointer transition ${photo.include ? 'border-primary bg-primary/5' : 'border-border opacity-60'}`}>
+                          <img src={photo.src} alt={photo.label} className="w-full h-28 object-cover rounded-md bg-muted" />
+                          <div className="flex items-center gap-2 mt-2">
                             <input type="checkbox" checked={photo.include} onChange={() => togglePhoto(photo.id)} />
-                            <span>{photo.label}</span>
+                            <span className="text-xs">{photo.label}</span>
                           </div>
                         </label>
                       ))}
@@ -391,79 +485,86 @@ export default function RelatoriosPage() {
               </CardContent>
             </Card>
 
-            <div className="report-print-area bg-white text-slate-900 border rounded-xl shadow-sm overflow-hidden">
-              <div className="p-8 sm:p-10 space-y-6">
-                <div className="text-center border-b-2 border-slate-800 pb-5">
-                  <p className="text-xs tracking-[0.2em] text-slate-500 uppercase">Multprest Serviços Industriais Ltda</p>
-                  <h1 className="text-2xl font-bold mt-2">{draft.title}</h1>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <h3 className="font-semibold text-lg">Pré-visualização na folha timbrada</h3>
+                  <p className="text-sm text-muted-foreground">A primeira página contém os dados e as demais organizam até 4 fotos por página.</p>
                 </div>
+                <Button onClick={() => window.print()} className="gap-2">
+                  <Printer className="w-4 h-4" />
+                  Exportar / Imprimir PDF
+                </Button>
+              </div>
 
-                <div className="report-section grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Data / período</p>
-                    <p className="font-semibold">{draft.period}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Cliente</p>
-                    <p className="font-semibold">{draft.client}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Horário</p>
-                    <p className="font-semibold">{draft.schedule}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Quantidade de funcionários</p>
-                    <p className="font-semibold">{draft.headcount}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Equipe</p>
-                    <p className="font-semibold">{draft.team}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Responsável pelo registro</p>
-                    <p className="font-semibold">{draft.responsible}</p>
-                  </div>
-                </div>
-
-                <div className="report-section border-t pt-5">
-                  <h2 className="font-bold text-base mb-2">Atividades realizadas</h2>
-                  <p className="whitespace-pre-line text-sm leading-6">{draft.activities}</p>
-                </div>
-
-                <div className="report-section border-t pt-5">
-                  <h2 className="font-bold text-base mb-2">Observações</h2>
-                  <p className="whitespace-pre-line text-sm leading-6">{draft.observations}</p>
-                </div>
-
-                {draft.photos.some((photo) => photo.include) && (
-                  <div className="border-t pt-5">
-                    <h2 className="font-bold text-base mb-3">Registro fotográfico</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                      {draft.photos.filter((photo) => photo.include).map((photo) => (
-                        <figure key={photo.id} className="report-photo-block border rounded-lg overflow-hidden">
-                          <img src={photo.src} alt={photo.label} className="w-full h-56 object-cover" />
-                          <figcaption className="px-3 py-2 text-xs text-slate-600 border-t">{photo.label}</figcaption>
-                        </figure>
-                      ))}
+              <div className="report-print-area overflow-x-auto pb-4">
+                <div className="space-y-4 min-w-[210mm]">
+                  <ReportLetterhead>
+                    <div className="text-center border-b-2 border-[#244c82] pb-2 mb-3">
+                      <h1 className="text-[16px] font-bold tracking-wide text-[#173f73]">{draft.title}</h1>
                     </div>
-                  </div>
-                )}
 
-                <div className="border-t pt-4 text-xs text-slate-500 flex justify-between gap-4">
-                  <span>{draft.recordCount} registro(s) utilizado(s) na composição deste relatório.</span>
-                  <span>Diário de Obra - Multprest</span>
+                    <div className="border border-slate-300 rounded-sm overflow-hidden report-section">
+                      <SummaryRow label="Nº do relatório" value={draft.reportNumber} rightLabel="OF / OS" rightValue={draft.ofNumber} />
+                      <SummaryRow label="Data / período" value={draft.period} rightLabel="Cliente" rightValue={draft.client} />
+                      <SummaryRow label="Horário" value={draft.schedule} rightLabel="Quantidade de funcionários" rightValue={String(draft.headcount)} />
+                      <SummaryRow label="Responsável" value={draft.responsible} rightLabel="Registros consolidados" rightValue={String(draft.recordCount)} />
+                      <div className="px-3 py-2">
+                        <span className="text-[9px] uppercase tracking-wide font-semibold text-slate-500">Equipe</span>
+                        <div className="text-[11px] font-medium break-words">{draft.team || '—'}</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 report-section">
+                      <div className="text-[10px] font-bold text-[#173f73] uppercase mb-1">Atividades realizadas</div>
+                      <div className="border border-slate-300 rounded-sm p-3 text-[10px] leading-4 min-h-[42mm] report-preline break-words">
+                        {draft.activities}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 report-section">
+                      <div className="text-[10px] font-bold text-[#173f73] uppercase mb-1">Observações</div>
+                      <div className="border border-slate-300 rounded-sm p-3 text-[10px] leading-4 min-h-[20mm] report-preline break-words">
+                        {draft.observations}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-2 gap-10 items-end report-section">
+                      <div className="text-[9px] text-slate-600">
+                        <strong>Documento:</strong> {draft.reportNumber}
+                      </div>
+                      <div className="text-center pt-8">
+                        <div className="border-t border-slate-700 pt-1 text-[10px] font-semibold">{draft.signatureName || 'Assinatura'}</div>
+                        <div className="text-[9px] text-slate-500">{draft.signatureRole}</div>
+                      </div>
+                    </div>
+                  </ReportLetterhead>
+
+                  {photoPages.map((pagePhotos, pageIndex) => (
+                    <ReportLetterhead key={`photos-${pageIndex}`}>
+                      <div className="text-center border-b-2 border-[#244c82] pb-2 mb-4">
+                        <h2 className="text-[15px] font-bold tracking-wide text-[#173f73]">REGISTRO FOTOGRÁFICO</h2>
+                        <div className="text-[9px] text-slate-500 mt-1">{draft.reportNumber} • {draft.period} • {draft.client}</div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {pagePhotos.map((photo) => (
+                          <figure key={photo.id} className="report-photo-block border border-slate-300 rounded-sm p-2 bg-white/95">
+                            <img
+                              src={photo.src}
+                              alt={photo.label}
+                              className="w-full h-[73mm] object-contain bg-slate-50"
+                            />
+                            <figcaption className="text-[9px] text-center mt-1.5 font-medium text-slate-600">{photo.label}</figcaption>
+                          </figure>
+                        ))}
+                      </div>
+                    </ReportLetterhead>
+                  ))}
                 </div>
               </div>
             </div>
           </>
-        )}
-
-        {!draft && (
-          <div className="border border-dashed rounded-xl py-12 px-6 text-center text-muted-foreground">
-            <CalendarDays className="w-10 h-10 mx-auto mb-3 text-primary/60" />
-            <p className="font-medium text-foreground">Selecione os filtros e gere o relatório.</p>
-            <p className="text-sm mt-1">Você pode usar apenas um filtro ou combinar dia, período, cliente e funcionário.</p>
-          </div>
         )}
       </div>
     </Layout>
