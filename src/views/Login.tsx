@@ -1,3 +1,127 @@
 'use client';
-import {useState,useEffect} from 'react';import {useNavigate} from '@/lib/router-shim';import {Card,CardContent,CardHeader,CardTitle} from '@/components/ui/card';import {Button} from '@/components/ui/button';import {Input} from '@/components/ui/input';import {Label} from '@/components/ui/label';import {HardHat,User,Lock,Loader2,AlertCircle} from 'lucide-react';import {useAuth} from '@/hooks/useAuth';
-export default function LoginPage(){const{login,user,isLoading}=useAuth();const navigate=useNavigate();const[username,setUsername]=useState('');const[password,setPassword]=useState('');const[error,setError]=useState('');const[loading,setLoading]=useState(false);useEffect(()=>{if(!isLoading&&user)navigate('/');},[isLoading,user,navigate]);const handleSubmit=async(e:React.FormEvent)=>{e.preventDefault();setError('');setLoading(true);const r=await login(username,password);if(r.success)navigate('/');else setError(r.error||'Erro ao fazer login');setLoading(false);};return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary to-slate-800 flex items-center justify-center p-4"><div className="w-full max-w-md"><div className="text-center mb-8"><div className="w-20 h-20 bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4"><HardHat className="w-10 h-10 text-white"/></div><h1 className="text-3xl font-bold text-white">Diário de Obra</h1><p className="text-white/70 mt-2">Controle de atividades</p></div><Card className="border-0 shadow-2xl"><CardHeader className="pb-4"><CardTitle className="text-xl text-center">Entrar</CardTitle></CardHeader><CardContent><form onSubmit={handleSubmit} className="space-y-4">{error&&<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2"><AlertCircle className="w-5 h-5"/><span className="text-sm">{error}</span></div>}<div className="space-y-2"><Label htmlFor="username" className="flex items-center gap-2"><User className="w-4 h-4 text-muted-foreground"/>Usuário</Label><Input id="username" value={username} onChange={e=>setUsername(e.target.value)} placeholder="Digite seu usuário" className="h-12" required/></div><div className="space-y-2"><Label htmlFor="password" className="flex items-center gap-2"><Lock className="w-4 h-4 text-muted-foreground"/>Senha</Label><Input id="password" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Digite sua senha" className="h-12" required/></div><Button type="submit" className="w-full h-12 text-base font-semibold mt-6" disabled={loading}>{loading?<><Loader2 className="w-5 h-5 mr-2 animate-spin"/>Entrando...</>:'Entrar'}</Button></form></CardContent></Card></div></div>;}
+
+import { useState, useEffect } from 'react';
+import { useNavigate } from '@/lib/router-shim';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { HardHat, User, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+
+export default function LoginPage() {
+  const { login, user, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate('/');
+    }
+  }, [isLoading, user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const result = await login(username, password);
+
+    if (result.success) {
+      navigate('/');
+    } else {
+      setError(result.error || 'Erro ao fazer login');
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary to-slate-800 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <HardHat className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">Diário de Obra</h1>
+          <p className="text-white/70 mt-2">Controle de atividades</p>
+        </div>
+
+        {/* Login Card */}
+        <Card className="border-0 shadow-2xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl text-center">Entrar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="username" className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  Usuário
+                </Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Digite seu usuário"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="h-12"
+                  autoComplete="username"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                  Senha
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-12"
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-semibold mt-6"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <p className="text-center text-white/50 text-sm mt-6">
+          Entre com suas credenciais para acessar o sistema
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -43,6 +43,12 @@ CREATE TABLE public.account (
     issuer text
 );
 
+
+
+--
+-- Name: app_users; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
 CREATE TABLE public.app_users (
     id bigint NOT NULL,
     username text NOT NULL,
@@ -53,8 +59,31 @@ CREATE TABLE public.app_users (
     updated_at text DEFAULT (CURRENT_TIMESTAMP)::text
 );
 
-CREATE SEQUENCE public.app_users_id_seq START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+
+
+--
+-- Name: app_users_id_seq; Type: SEQUENCE; Schema: public; Owner: neondb_owner
+--
+
+CREATE SEQUENCE public.app_users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+
+--
+-- Name: app_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
+--
+
 ALTER SEQUENCE public.app_users_id_seq OWNED BY public.app_users.id;
+
+
+--
+-- Name: clientes; Type: TABLE; Schema: public; Owner: neondb_owner
+--
 
 CREATE TABLE public.clientes (
     id bigint NOT NULL,
@@ -62,8 +91,32 @@ CREATE TABLE public.clientes (
     created_at text DEFAULT (CURRENT_TIMESTAMP)::text,
     updated_at text DEFAULT (CURRENT_TIMESTAMP)::text
 );
-CREATE SEQUENCE public.clientes_id_seq START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+
+
+
+--
+-- Name: clientes_id_seq; Type: SEQUENCE; Schema: public; Owner: neondb_owner
+--
+
+CREATE SEQUENCE public.clientes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+
+--
+-- Name: clientes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
+--
+
 ALTER SEQUENCE public.clientes_id_seq OWNED BY public.clientes.id;
+
+
+--
+-- Name: funcionarios; Type: TABLE; Schema: public; Owner: neondb_owner
+--
 
 CREATE TABLE public.funcionarios (
     id bigint NOT NULL,
@@ -71,8 +124,32 @@ CREATE TABLE public.funcionarios (
     created_at text DEFAULT (CURRENT_TIMESTAMP)::text,
     updated_at text DEFAULT (CURRENT_TIMESTAMP)::text
 );
-CREATE SEQUENCE public.funcionarios_id_seq START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+
+
+
+--
+-- Name: funcionarios_id_seq; Type: SEQUENCE; Schema: public; Owner: neondb_owner
+--
+
+CREATE SEQUENCE public.funcionarios_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+
+--
+-- Name: funcionarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
+--
+
 ALTER SEQUENCE public.funcionarios_id_seq OWNED BY public.funcionarios.id;
+
+
+--
+-- Name: registro_funcionarios; Type: TABLE; Schema: public; Owner: neondb_owner
+--
 
 CREATE TABLE public.registro_funcionarios (
     id bigint NOT NULL,
@@ -81,8 +158,32 @@ CREATE TABLE public.registro_funcionarios (
     created_at text DEFAULT (CURRENT_TIMESTAMP)::text,
     updated_at text DEFAULT (CURRENT_TIMESTAMP)::text
 );
-CREATE SEQUENCE public.registro_funcionarios_id_seq START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+
+
+
+--
+-- Name: registro_funcionarios_id_seq; Type: SEQUENCE; Schema: public; Owner: neondb_owner
+--
+
+CREATE SEQUENCE public.registro_funcionarios_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+
+--
+-- Name: registro_funcionarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
+--
+
 ALTER SEQUENCE public.registro_funcionarios_id_seq OWNED BY public.registro_funcionarios.id;
+
+
+--
+-- Name: registros; Type: TABLE; Schema: public; Owner: neondb_owner
+--
 
 CREATE TABLE public.registros (
     id bigint NOT NULL,
@@ -103,8 +204,32 @@ CREATE TABLE public.registros (
     of_title text,
     of_customer_name text
 );
-CREATE SEQUENCE public.registros_id_seq START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
+
+
+
+--
+-- Name: registros_id_seq; Type: SEQUENCE; Schema: public; Owner: neondb_owner
+--
+
+CREATE SEQUENCE public.registros_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+
+--
+-- Name: registros_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
+--
+
 ALTER SEQUENCE public.registros_id_seq OWNED BY public.registros.id;
+
+
+--
+-- Name: session; Type: TABLE; Schema: public; Owner: neondb_owner
+--
 
 CREATE TABLE public.session (
     id text NOT NULL,
@@ -117,6 +242,12 @@ CREATE TABLE public.session (
     "userId" text NOT NULL
 );
 
+
+
+--
+-- Name: user; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
 CREATE TABLE public."user" (
     id text NOT NULL,
     name text NOT NULL,
@@ -127,6 +258,12 @@ CREATE TABLE public."user" (
     "updatedAt" timestamp with time zone DEFAULT now() NOT NULL
 );
 
+
+
+--
+-- Name: verification; Type: TABLE; Schema: public; Owner: neondb_owner
+--
+
 CREATE TABLE public.verification (
     id text NOT NULL,
     identifier text NOT NULL,
@@ -136,31 +273,205 @@ CREATE TABLE public.verification (
     "updatedAt" timestamp with time zone DEFAULT now()
 );
 
+
+
+--
+-- Name: app_users id; Type: DEFAULT; Schema: public; Owner: neondb_owner
+--
+
 ALTER TABLE ONLY public.app_users ALTER COLUMN id SET DEFAULT nextval('public.app_users_id_seq'::regclass);
+
+
+--
+-- Name: clientes id; Type: DEFAULT; Schema: public; Owner: neondb_owner
+--
+
 ALTER TABLE ONLY public.clientes ALTER COLUMN id SET DEFAULT nextval('public.clientes_id_seq'::regclass);
+
+
+--
+-- Name: funcionarios id; Type: DEFAULT; Schema: public; Owner: neondb_owner
+--
+
 ALTER TABLE ONLY public.funcionarios ALTER COLUMN id SET DEFAULT nextval('public.funcionarios_id_seq'::regclass);
+
+
+--
+-- Name: registro_funcionarios id; Type: DEFAULT; Schema: public; Owner: neondb_owner
+--
+
 ALTER TABLE ONLY public.registro_funcionarios ALTER COLUMN id SET DEFAULT nextval('public.registro_funcionarios_id_seq'::regclass);
+
+
+--
+-- Name: registros id; Type: DEFAULT; Schema: public; Owner: neondb_owner
+--
+
 ALTER TABLE ONLY public.registros ALTER COLUMN id SET DEFAULT nextval('public.registros_id_seq'::regclass);
 
-ALTER TABLE ONLY public.account ADD CONSTRAINT account_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY public.app_users ADD CONSTRAINT app_users_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY public.app_users ADD CONSTRAINT app_users_username_key UNIQUE (username);
-ALTER TABLE ONLY public.clientes ADD CONSTRAINT clientes_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY public.funcionarios ADD CONSTRAINT funcionarios_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY public.registro_funcionarios ADD CONSTRAINT registro_funcionarios_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY public.registros ADD CONSTRAINT registros_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY public.session ADD CONSTRAINT session_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY public.session ADD CONSTRAINT session_token_key UNIQUE (token);
-ALTER TABLE ONLY public."user" ADD CONSTRAINT user_email_key UNIQUE (email);
-ALTER TABLE ONLY public."user" ADD CONSTRAINT user_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY public.verification ADD CONSTRAINT verification_pkey PRIMARY KEY (id);
+
+--
+-- Name: account account_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.account
+    ADD CONSTRAINT account_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: app_users app_users_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.app_users
+    ADD CONSTRAINT app_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: app_users app_users_username_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.app_users
+    ADD CONSTRAINT app_users_username_key UNIQUE (username);
+
+
+--
+-- Name: clientes clientes_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.clientes
+    ADD CONSTRAINT clientes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: funcionarios funcionarios_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.funcionarios
+    ADD CONSTRAINT funcionarios_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: registro_funcionarios registro_funcionarios_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.registro_funcionarios
+    ADD CONSTRAINT registro_funcionarios_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: registros registros_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.registros
+    ADD CONSTRAINT registros_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: session session_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.session
+    ADD CONSTRAINT session_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: session session_token_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.session
+    ADD CONSTRAINT session_token_key UNIQUE (token);
+
+
+--
+-- Name: user user_email_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public."user"
+    ADD CONSTRAINT user_email_key UNIQUE (email);
+
+
+--
+-- Name: user user_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public."user"
+    ADD CONSTRAINT user_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: verification verification_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.verification
+    ADD CONSTRAINT verification_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_account_provider; Type: INDEX; Schema: public; Owner: neondb_owner
+--
 
 CREATE INDEX idx_account_provider ON public.account USING btree ("providerId", "accountId");
+
+
+--
+-- Name: idx_account_userid; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
 CREATE INDEX idx_account_userid ON public.account USING btree ("userId");
+
+
+--
+-- Name: idx_session_userid; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
 CREATE INDEX idx_session_userid ON public.session USING btree ("userId");
+
+
+--
+-- Name: idx_verification_identifier; Type: INDEX; Schema: public; Owner: neondb_owner
+--
+
 CREATE INDEX idx_verification_identifier ON public.verification USING btree (identifier);
 
-ALTER TABLE ONLY public.account ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."user"(id) ON DELETE CASCADE;
-ALTER TABLE ONLY public.session ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."user"(id) ON DELETE CASCADE;
 
--- Estrutura somente. Dados reais do banco original não são incluídos neste repositório.
+--
+-- Name: account account_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.account
+    ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: session session_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.session
+    ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: cloud_admin
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE cloud_admin IN SCHEMA public GRANT ALL ON SEQUENCES TO neon_superuser WITH GRANT OPTION;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: cloud_admin
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE cloud_admin IN SCHEMA public GRANT ALL ON TABLES TO neon_superuser WITH GRANT OPTION;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+
+
+-- Data
+
+
+
+

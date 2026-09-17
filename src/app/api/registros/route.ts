@@ -1,10 +1,120 @@
 import { NextResponse, after, type NextRequest } from "next/server";
+
 import sql from "@/app/api/utils/sql";
 import { readJson, rows, toNumberOrNull, toStringOrNull } from "@/app/api/_helpers/obra-auth";
-import { calculateHoursWorked, loadFuncionariosByRegistro, parseFuncionarioIds, sendToDashboard, type RegistroRow } from "@/app/api/_helpers/registros";
-export const dynamic="force-dynamic";
+import {
+  calculateHoursWorked,
+  loadFuncionariosByRegistro,
+  parseFuncionarioIds,
+  sendToDashboard,
+  type RegistroRow,
+} from "@/app/api/_helpers/registros";
 
-export async function GET(){const registros=rows<RegistroRow>(await sql`SELECT r.id::int AS id,r.data,r.chegada,r.saida,r.trabalho,r.observacoes,r.foto_inicio_key,r.foto_fim_key,r.foto_observacoes_key,r.created_by,r.of_id::int AS of_id,r.of_number,r.of_title,r.of_customer_name,c.nome AS cliente_nome,c.id::int AS cliente_id FROM registros r LEFT JOIN clientes c ON r.cliente_id=c.id ORDER BY r.data DESC NULLS LAST,r.created_at DESC NULLS LAST`);const funcionariosByRegistro=await loadFuncionariosByRegistro();return NextResponse.json(registros.map(r=>({...r,funcionarios:funcionariosByRegistro.get(r.id)??[]})));}
+export const dynamic = "force-dynamic";
 
-export async function POST(req:NextRequest){const body=await readJson(req);const cliente_id=toNumberOrNull(body.cliente_id);const funcionario_ids=parseFuncionarioIds(body.funcionario_ids);const data=toStringOrNull(body.data);const chegada=toStringOrNull(body.chegada);const saida=toStringOrNull(body.saida);const trabalho=toStringOrNull(body.trabalho);const observacoes=toStringOrNull(body.observacoes);const foto_inicio_key=toStringOrNull(body.foto_inicio_key);const foto_fim_key=toStringOrNull(body.foto_fim_key);const foto_observacoes_key=toStringOrNull(body.foto_observacoes_key);const created_by=toStringOrNull(body.created_by);const of_id=toNumberOrNull(body.of_id);const of_number=toStringOrNull(body.of_number);const of_title=toStringOrNull(body.of_title);const of_customer_name=toStringOrNull(body.of_customer_name);
-const inserted=rows<{id:number}>(await sql`INSERT INTO registros (cliente_id,data,chegada,saida,trabalho,observacoes,foto_inicio_key,foto_fim_key,foto_observacoes_key,created_by,of_id,of_number,of_title,of_customer_name) VALUES (${cliente_id},${data},${chegada},${saida},${trabalho},${observacoes},${foto_inicio_key},${foto_fim_key},${foto_observacoes_key},${created_by},${of_id},${of_number},${of_title},${of_customer_name}) RETURNING id::int AS id`);const registro=inserted[0];if(!registro)return NextResponse.json({error:"Failed to create registro"},{status:500});const funcionarioNames:string[]=[];for(const funcId of funcionario_ids){await sql`INSERT INTO registro_funcionarios (registro_id,funcionario_id) VALUES (${registro.id},${funcId})`;const found=rows<{nome:string}>(await sql`SELECT nome FROM funcionarios WHERE id=${funcId} LIMIT 1`);if(found[0])funcionarioNames.push(found[0].nome);}if(of_number){const hoursWorked=calculateHoursWorked(chegada??"",saida??"");const entryDate=data??"";const names=[...funcionarioNames];const registroId=registro.id;after(async()=>{for(const employeeName of names)await sendToDashboard({of_number,employee_name:employeeName,entry_date:entryDate,hours_worked:hoursWorked,description:trabalho??"",notes:observacoes??"",external_id:registroId});});}return NextResponse.json({id:registro.id},{status:201});}
+// GET /api/registros
+export async function GET() {
+  const registros = rows<RegistroRow>(
+    await sql`
+      SELECT r.id::int AS id, r.data, r.chegada, r.saida, r.trabalho, r.observacoes,
+             r.foto_inicio_key, r.foto_fim_key, r.foto_observacoes_key, r.created_by,
+             r.of_id::int AS of_id, r.of_number, r.of_title, r.of_customer_name,
+             c.nome AS cliente_nome, c.id::int AS cliente_id
+      FROM registros r
+      LEFT JOIN clientes c ON r.cliente_id = c.id
+      -- NULLS LAST matches the SQLite DESC ordering, where NULL sorted last.
+      ORDER BY r.data DESC NULLS LAST, r.created_at DESC NULLS LAST
+    `
+  );
+
+  const funcionariosByRegistro = await loadFuncionariosByRegistro();
+
+  return NextResponse.json(
+    registros.map((registro) => ({
+      ...registro,
+      funcionarios: funcionariosByRegistro.get(registro.id) ?? [],
+    }))
+  );
+}
+
+// POST /api/registros
+export async function POST(req: NextRequest) {
+  const body = await readJson(req);
+
+  const cliente_id = toNumberOrNull(body.cliente_id);
+  const funcionario_ids = parseFuncionarioIds(body.funcionario_ids);
+  const data = toStringOrNull(body.data);
+  const chegada = toStringOrNull(body.chegada);
+  const saida = toStringOrNull(body.saida);
+  const trabalho = toStringOrNull(body.trabalho);
+  const observacoes = toStringOrNull(body.observacoes);
+  const foto_inicio_key = toStringOrNull(body.foto_inicio_key);
+  const foto_fim_key = toStringOrNull(body.foto_fim_key);
+  const foto_observacoes_key = toStringOrNull(body.foto_observacoes_key);
+  const created_by = toStringOrNull(body.created_by);
+  const of_id = toNumberOrNull(body.of_id);
+  const of_number = toStringOrNull(body.of_number);
+  const of_title = toStringOrNull(body.of_title);
+  const of_customer_name = toStringOrNull(body.of_customer_name);
+
+  const inserted = rows<{ id: number }>(
+    await sql`
+      INSERT INTO registros (
+        cliente_id, data, chegada, saida, trabalho, observacoes,
+        foto_inicio_key, foto_fim_key, foto_observacoes_key, created_by,
+        of_id, of_number, of_title, of_customer_name
+      )
+      VALUES (
+        ${cliente_id}, ${data}, ${chegada}, ${saida}, ${trabalho}, ${observacoes},
+        ${foto_inicio_key}, ${foto_fim_key}, ${foto_observacoes_key}, ${created_by},
+        ${of_id}, ${of_number}, ${of_title}, ${of_customer_name}
+      )
+      RETURNING id::int AS id
+    `
+  );
+
+  const registro = inserted[0];
+  if (!registro) {
+    return NextResponse.json({ error: "Failed to create registro" }, { status: 500 });
+  }
+
+  // Link funcionarios and collect their names for the dashboard push.
+  const funcionarioNames: string[] = [];
+  for (const funcId of funcionario_ids) {
+    await sql`
+      INSERT INTO registro_funcionarios (registro_id, funcionario_id)
+      VALUES (${registro.id}, ${funcId})
+    `;
+
+    const found = rows<{ nome: string }>(
+      await sql`SELECT nome FROM funcionarios WHERE id = ${funcId} LIMIT 1`
+    );
+    if (found[0]) funcionarioNames.push(found[0].nome);
+  }
+
+  // Mirror the entry into the external Multprest dashboard when an OF is linked.
+  // The worker did this without awaiting; `after()` is the Next equivalent that
+  // keeps the work alive past the response instead of having it dropped.
+  if (of_number) {
+    const hoursWorked = calculateHoursWorked(chegada ?? "", saida ?? "");
+    const entryDate = data ?? "";
+    const names = [...funcionarioNames];
+    const registroId = registro.id;
+
+    after(async () => {
+      for (const employeeName of names) {
+        await sendToDashboard({
+          of_number,
+          employee_name: employeeName,
+          entry_date: entryDate,
+          hours_worked: hoursWorked,
+          description: trabalho ?? "",
+          notes: observacoes ?? "",
+          external_id: registroId,
+        });
+      }
+    });
+  }
+
+  return NextResponse.json({ id: registro.id }, { status: 201 });
+}

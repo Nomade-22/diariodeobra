@@ -4,6 +4,10 @@ declare module 'vitest/config' {
   export function defineConfig(config: Record<string, any>): Record<string, any>;
 }
 
+/**
+ * V1 auth-client specifier kept resolvable for migrated apps. See
+ * src/__create/@auth/create/react.tsx for the runtime shim.
+ */
 declare module '@auth/create/react' {
   import type { ReactNode } from 'react';
   export function SessionProvider(props: { children?: ReactNode }): ReactNode;
