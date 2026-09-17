@@ -6,6 +6,7 @@ import HomePage from "@/views/Home";
 import FuncionariosPage from "@/views/Funcionarios";
 import ClientesPage from "@/views/Clientes";
 import HistoricoPage from "@/views/Historico";
+import RelatoriosPage from "@/views/Relatorios";
 import UsuariosPage from "@/views/Usuarios";
 import LoginPage from "@/views/Login";
 import { Loader2 } from "lucide-react";
@@ -50,6 +51,7 @@ function AppRoutes() {
       <Route path="/funcionarios" element={<ProtectedRoute><FuncionariosPage /></ProtectedRoute>} />
       <Route path="/clientes" element={<ProtectedRoute><ClientesPage /></ProtectedRoute>} />
       <Route path="/historico" element={<ProtectedRoute adminOnly><HistoricoPage /></ProtectedRoute>} />
+      <Route path="/relatorios" element={<ProtectedRoute adminOnly><RelatoriosPage /></ProtectedRoute>} />
       <Route path="/usuarios" element={<ProtectedRoute adminOnly><UsuariosPage /></ProtectedRoute>} />
     </Routes>
   );
