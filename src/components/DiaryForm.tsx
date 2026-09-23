@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Camera, Clock, FileText, Upload, CheckCircle2, Loader2, X, User } from "lucide-react";
-import { useFuncionarios, useClientes, useRegistros } from "@/hooks/useApi";\nimport { uploadPhoto } from "@/lib/uploadPhoto";
+import { useFuncionarios, useClientes, useRegistros } from "@/hooks/useApi";
+import { uploadPhoto } from "@/lib/uploadPhoto";
 
 interface PhotoUploadProps {
   label: string;
