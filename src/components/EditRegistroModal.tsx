@@ -9,7 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { X, Loader2, CheckCircle2, Camera, Upload, Clock } from "lucide-react";
 import { Registro, Funcionario, Cliente } from "@/hooks/useApi";
-import { resolvePhotoSrc } from "@/lib/photos";\nimport { uploadPhoto } from "@/lib/uploadPhoto";
+import { resolvePhotoSrc } from "@/lib/photos";
+import { uploadPhoto } from "@/lib/uploadPhoto";
 
 interface EditRegistroModalProps {
   registro: Registro;
