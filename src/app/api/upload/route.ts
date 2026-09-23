@@ -1,64 +1,67 @@
-import { put } from "@vercel/blob";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse, type NextRequest } from "next/server";
+
+import { getObraUser } from "@/app/api/_helpers/obra-auth";
 
 export const dynamic = "force-dynamic";
 
-function sanitizeFilename(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "") || "foto";
-}
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+];
 
-/**
- * POST /api/upload
- *
- * Salva as fotos do Diário de Obra no Vercel Blob e devolve a URL pública.
- * O frontend continua recebendo `key`, preservando o contrato da aplicação
- * original, mas agora o valor salvo em registros.foto_*_key é uma URL pública.
- */
 export async function POST(req: NextRequest) {
-  let formData: FormData;
+  let body: HandleUploadBody;
 
   try {
-    formData = await req.formData();
+    body = (await req.json()) as HandleUploadBody;
   } catch {
-    return NextResponse.json({ error: "No file provided" }, { status: 400 });
-  }
-
-  const file = formData.get("file");
-
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "No file provided" }, { status: 400 });
-  }
-
-  if (file.size === 0) {
-    return NextResponse.json({ error: "Arquivo vazio" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Solicitação de upload inválida." },
+      { status: 400 }
+    );
   }
 
   try {
-    const safeName = sanitizeFilename(file.name || "foto");
-    const pathname = `registros/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+    const response = await handleUpload({
+      body,
+      request: req,
+      onBeforeGenerateToken: async () => {
+        const user = await getObraUser(req);
 
-    const blob = await put(pathname, file, {
-      access: "public",
-      contentType: file.type || undefined,
+        if (!user) {
+          throw new Error("Sessão expirada. Entre novamente antes de enviar fotos.");
+        }
+
+        if (!process.env.BLOB_READ_WRITE_TOKEN) {
+          throw new Error(
+            "O armazenamento de fotos não está configurado no ambiente da Vercel."
+          );
+        }
+
+        return {
+          allowedContentTypes: ALLOWED_IMAGE_TYPES,
+          addRandomSuffix: true,
+          tokenPayload: JSON.stringify({ userId: user.id }),
+        };
+      },
+      onUploadCompleted: async ({ blob }) => {
+        console.info("Foto do diário salva no Vercel Blob:", blob.pathname);
+      },
     });
 
-    return NextResponse.json({
-      key: blob.url,
-      url: blob.url,
-      mimeType: blob.contentType ?? file.type ?? null,
-      filename: file.name || null,
-      externalId: blob.pathname,
-    });
+    return NextResponse.json(response);
   } catch (error) {
-    console.error("Vercel Blob upload failed:", error);
-    return NextResponse.json(
-      { error: "Falha ao enviar arquivo" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Falha ao preparar o upload da foto.";
+
+    console.error("Vercel Blob client upload failed:", error);
+
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
