@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Camera, Clock, FileText, Upload, CheckCircle2, Loader2, X, User } from "lucide-react";
-import { useFuncionarios, useClientes, useRegistros } from "@/hooks/useApi";
+import { useFuncionarios, useClientes, useRegistros } from "@/hooks/useApi";\nimport { uploadPhoto } from "@/lib/uploadPhoto";
 
 interface PhotoUploadProps {
   label: string;
@@ -84,19 +84,6 @@ function PhotoUpload({ label, description, preview, onFileChange, uploading }: P
       )}
     </div>
   );
-}
-
-async function uploadFile(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-  
-  const res = await fetch("/api/upload", {
-    method: "POST",
-    body: formData,
-  });
-  
-  const data = await res.json();
-  return data.key;
 }
 
 export default function DiaryForm() {
@@ -234,13 +221,13 @@ export default function DiaryForm() {
       let foto_observacoes_key: string | undefined;
 
       if (fotoInicio) {
-        foto_inicio_key = await uploadFile(fotoInicio);
+        foto_inicio_key = await uploadPhoto(fotoInicio);
       }
       if (fotoFim) {
-        foto_fim_key = await uploadFile(fotoFim);
+        foto_fim_key = await uploadPhoto(fotoFim);
       }
       if (fotoObs) {
-        foto_observacoes_key = await uploadFile(fotoObs);
+        foto_observacoes_key = await uploadPhoto(fotoObs);
       }
 
       await createRegistro({
@@ -275,7 +262,8 @@ export default function DiaryForm() {
       resetForm();
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
-      alert("Erro ao salvar registro. Tente novamente.");
+      const message = error instanceof Error ? error.message : "Erro desconhecido.";
+      alert(`Erro ao salvar registro. ${message}`);
     } finally {
       setSaving(false);
     }
