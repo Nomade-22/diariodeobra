@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { X, Loader2, CheckCircle2, Camera, Upload, Clock } from "lucide-react";
 import { Registro, Funcionario, Cliente } from "@/hooks/useApi";
 import { resolvePhotoSrc } from "@/lib/photos";
+import { uploadPhoto } from "@/lib/uploadPhoto";
 
 interface EditRegistroModalProps {
   registro: Registro;
@@ -28,14 +29,6 @@ interface EditRegistroModalProps {
     foto_observacoes_key?: string;
   }) => Promise<void>;
   onClose: () => void;
-}
-
-async function uploadFile(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await fetch("/api/upload", { method: "POST", body: formData });
-  const data = await res.json();
-  return data.key;
 }
 
 function PhotoField({ 
@@ -63,8 +56,13 @@ function PhotoField({
 
     setUploading(true);
     try {
-      const key = await uploadFile(file);
+      const key = await uploadPhoto(file);
       onKeyChange(key);
+    } catch (error) {
+      setPreview(currentKey ? resolvePhotoSrc(currentKey) : null);
+      if (inputRef.current) inputRef.current.value = "";
+      const message = error instanceof Error ? error.message : "Falha desconhecida no upload.";
+      alert(message);
     } finally {
       setUploading(false);
     }
