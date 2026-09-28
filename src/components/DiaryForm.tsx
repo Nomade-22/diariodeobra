@@ -21,7 +21,8 @@ interface PhotoUploadProps {
 }
 
 function PhotoUpload({ label, description, preview, onFileChange, uploading }: PhotoUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -32,18 +33,28 @@ function PhotoUpload({ label, description, preview, onFileChange, uploading }: P
 
   const handleRemove = () => {
     onFileChange(null);
-    if (inputRef.current) {
-      inputRef.current.value = "";
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = "";
+    }
+    if (galleryInputRef.current) {
+      galleryInputRef.current.value = "";
     }
   };
 
   return (
     <div>
       <input
-        ref={inputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
         capture="environment"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
         onChange={handleFileSelect}
         className="hidden"
       />
@@ -71,16 +82,31 @@ function PhotoUpload({ label, description, preview, onFileChange, uploading }: P
           )}
         </div>
       ) : (
-        <div
-          onClick={() => inputRef.current?.click()}
-          className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
-        >
+        <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
           <Camera className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-sm text-muted-foreground mb-2">{description || "Clique para tirar foto ou fazer upload"}</p>
-          <Button type="button" variant="outline" size="sm">
-            <Upload className="w-4 h-4 mr-2" />
-            Adicionar foto
-          </Button>
+          <p className="text-sm text-muted-foreground mb-4">
+            {description || "Tire uma foto agora ou escolha uma imagem já salva no aparelho"}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              Tirar foto
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => galleryInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Escolher da galeria
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -102,8 +128,6 @@ export default function DiaryForm() {
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [integrationSuccess, setIntegrationSuccess] = useState(false);
-  const [integrationError, setIntegrationError] = useState(false);
 
   // Photo states
   const [fotoInicio, setFotoInicio] = useState<File | null>(null);
@@ -151,56 +175,6 @@ export default function DiaryForm() {
     setFotoObsPreview(null);
   };
 
-  // Calculate hours worked from chegada and saida
-  const calculateHoursWorked = (chegada: string, saida: string): number => {
-    if (!chegada || !saida) return 0;
-    const [h1, m1] = chegada.split(":").map(Number);
-    const [h2, m2] = saida.split(":").map(Number);
-    const minutes1 = h1 * 60 + m1;
-    const minutes2 = h2 * 60 + m2;
-    return Math.round(((minutes2 - minutes1) / 60) * 100) / 100;
-  };
-
-  // Send data to external dashboard
-  const sendToDashboard = async (funcionarioNames: string[]) => {
-    const cliente = clientes.find(c => c.id === parseInt(selectedCliente));
-    const entryDate = new Date().toISOString().split("T")[0];
-    const hoursWorked = calculateHoursWorked(chegada, saida);
-
-    const payload = {
-      of_number: "",
-      employee_name: funcionarioNames.join(", "),
-      entry_date: entryDate,
-      hours_worked: hoursWorked,
-      description: trabalho,
-      location: cliente?.nome || "",
-      weather: "",
-      notes: observacoes,
-    };
-
-    console.log("Enviando para Dashboard:", payload);
-
-    try {
-      const response = await fetch("https://dashboardmultprest.mocha.app/api/public/diary-entries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-      console.log("Resposta do Dashboard:", data);
-
-      if (!response.ok) {
-        throw new Error("Failed to send to dashboard");
-      }
-      
-      return data;
-    } catch (error) {
-      console.error("Erro ao enviar para Dashboard:", error);
-      throw error;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -246,20 +220,6 @@ export default function DiaryForm() {
       });
       setSuccess(true);
 
-      // Send to external dashboard
-      try {
-        const selectedFuncNames = funcionarios
-          .filter(f => selectedFuncionarios.includes(f.id))
-          .map(f => f.nome);
-        
-        await sendToDashboard(selectedFuncNames);
-        setIntegrationSuccess(true);
-        setTimeout(() => setIntegrationSuccess(false), 5000);
-      } catch {
-        setIntegrationError(true);
-        setTimeout(() => setIntegrationError(false), 5000);
-      }
-
       resetForm();
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
@@ -296,20 +256,6 @@ export default function DiaryForm() {
         <div className="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5" />
           Registro salvo com sucesso!
-        </div>
-      )}
-
-      {integrationSuccess && (
-        <div className="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-3 rounded-lg flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5" />
-          Dados enviados para o Dashboard com sucesso!
-        </div>
-      )}
-
-      {integrationError && (
-        <div className="bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
-          <X className="w-5 h-5" />
-          Erro ao enviar dados para o Dashboard. O registro local foi salvo.
         </div>
       )}
 
