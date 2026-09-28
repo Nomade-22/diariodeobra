@@ -40,7 +40,8 @@ function PhotoField({
   currentKey: string | null;
   onKeyChange: (key: string | null) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(
     currentKey ? resolvePhotoSrc(currentKey) : null
   );
@@ -60,7 +61,8 @@ function PhotoField({
       onKeyChange(key);
     } catch (error) {
       setPreview(currentKey ? resolvePhotoSrc(currentKey) : null);
-      if (inputRef.current) inputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+      if (galleryInputRef.current) galleryInputRef.current.value = "";
       const message = error instanceof Error ? error.message : "Falha desconhecida no upload.";
       alert(message);
     } finally {
@@ -71,17 +73,25 @@ function PhotoField({
   const handleRemove = () => {
     setPreview(null);
     onKeyChange(null);
-    if (inputRef.current) inputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
   };
 
   return (
     <div>
       <Label className="text-sm mb-2 block">{label}</Label>
       <input
-        ref={inputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
         capture="environment"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
         onChange={handleFileSelect}
         className="hidden"
       />
@@ -104,14 +114,26 @@ function PhotoField({
           )}
         </div>
       ) : (
-        <div
-          onClick={() => inputRef.current?.click()}
-          className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors"
-        >
-          <Camera className="w-8 h-8 mx-auto text-muted-foreground mb-1" />
-          <Button type="button" variant="ghost" size="sm">
-            <Upload className="w-3 h-3 mr-1" /> Adicionar
-          </Button>
+        <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+          <Camera className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              <Camera className="w-3 h-3 mr-1" /> Tirar foto
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => galleryInputRef.current?.click()}
+            >
+              <Upload className="w-3 h-3 mr-1" /> Galeria
+            </Button>
+          </div>
         </div>
       )}
     </div>
