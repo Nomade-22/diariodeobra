@@ -1,9 +1,6 @@
 import sql from "@/app/api/utils/sql";
 import { rows } from "@/app/api/_helpers/obra-auth";
 
-export const DASHBOARD_API_URL =
-  "https://dashboardmultprest.mocha.app/api/public/diary-entries";
-
 export interface RegistroFuncionario {
   id: number;
   nome: string;
@@ -46,27 +43,6 @@ export function calculateHoursWorked(chegada: string, saida: string): number {
   const saidaMinutes = saidaH * 60 + saidaM;
 
   return Math.round(((saidaMinutes - chegadaMinutes) / 60) * 100) / 100;
-}
-
-/** Fire-and-forget push to the external Multprest dashboard. Never throws. */
-export async function sendToDashboard(entry: {
-  of_number: string;
-  employee_name: string;
-  entry_date: string;
-  hours_worked: number;
-  description: string;
-  notes: string;
-  external_id: number;
-}): Promise<void> {
-  try {
-    await fetch(DASHBOARD_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(entry),
-    });
-  } catch (error) {
-    console.error("Failed to send to dashboard:", error);
-  }
 }
 
 /**
