@@ -42,6 +42,8 @@ export function calculateHoursWorked(chegada: string, saida: string): number {
   const chegadaMinutes = chegadaH * 60 + chegadaM;
   const saidaMinutes = saidaH * 60 + saidaM;
 
+  if (saidaMinutes <= chegadaMinutes) return 0;
+
   return Math.round(((saidaMinutes - chegadaMinutes) / 60) * 100) / 100;
 }
 
