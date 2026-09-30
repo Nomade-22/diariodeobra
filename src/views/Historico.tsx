@@ -22,7 +22,7 @@ import {
   Send,
   CheckCircle2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRegistros, useFuncionarios, useClientes, Registro } from '@/hooks/useApi';
 import EditRegistroModal from '@/components/EditRegistroModal';
 import { resolvePhotoSrc } from '@/lib/photos';
@@ -104,55 +104,58 @@ export default function HistoricoPage() {
     return `${hours}h${mins}min`;
   };
 
-  const calculateHoursNumeric = (chegada: string, saida: string): number => {
-    if (!chegada || !saida) return 0;
-    const [h1, m1] = chegada.split(':').map(Number);
-    const [h2, m2] = saida.split(':').map(Number);
-    const start = h1 * 60 + m1;
-    const end = h2 * 60 + m2;
-    if (end <= start) return 0;
-    return (end - start) / 60;
-  };
-
-  // Send a single registro to dashboard
-  const sendToDashboard = async (registro: Registro) => {
-    const funcionarioNames = registro.funcionarios?.map((f) => f.nome) || [];
-
-    const payload = {
-      of_number: registro.of_number || '',
-      employee_name: funcionarioNames.join(', '),
-      entry_date: registro.data || new Date().toISOString().split('T')[0],
-      hours_worked: calculateHoursNumeric(registro.chegada || '', registro.saida || ''),
-      description: registro.trabalho || '',
-      location: registro.cliente_nome || registro.of_customer_name || '',
-      weather: '',
-      notes: registro.observacoes || '',
-    };
-
-    console.log('Enviando para Dashboard:', payload);
-
-    const response = await fetch('https://dashboardmultprest.mocha.app/api/public/diary-entries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json();
-    console.log('Resposta do Dashboard:', data);
-
-    if (!response.ok) {
-      throw new Error('Failed to send to dashboard');
+  useEffect(() => {
+    if (registros.length === 0) {
+      setSentIds(new Set());
+      return;
     }
-  };
+
+    let cancelled = false;
+    const ids = registros.map((registro) => registro.id).join(',');
+
+    fetch(`/api/dashboard-sync?registro_ids=${encodeURIComponent(ids)}`, {
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao consultar sincronização');
+        }
+        return data as { synced_ids?: number[] };
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setSentIds(new Set(Array.isArray(data.synced_ids) ? data.synced_ids : []));
+        }
+      })
+      .catch((error) => {
+        console.error('Erro ao consultar registros enviados ao Dashboard:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [registros]);
 
   const handleSendSingle = async (registro: Registro) => {
     setSendingIds((prev) => new Set(prev).add(registro.id));
     try {
-      await sendToDashboard(registro);
-      setSentIds((prev) => new Set(prev).add(registro.id));
+      const response = await fetch('/api/dashboard-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registro_ids: [registro.id] }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao enviar para o Dashboard');
+      }
+
+      const syncedIds: number[] = Array.isArray(data.synced_ids) ? data.synced_ids : [];
+      setSentIds((prev) => new Set([...prev, ...syncedIds]));
     } catch (error) {
       console.error('Erro ao enviar:', error);
-      alert('Erro ao enviar para o Dashboard');
+      alert(error instanceof Error ? error.message : 'Erro ao enviar para o Dashboard');
     } finally {
       setSendingIds((prev) => {
         const newSet = new Set(prev);
@@ -163,32 +166,48 @@ export default function HistoricoPage() {
   };
 
   const handleBulkSync = async () => {
-    setBulkSending(true);
-    let successCount = 0;
-    let errorCount = 0;
+    const pendingIds = registros
+      .filter((registro) => !sentIds.has(registro.id))
+      .map((registro) => registro.id);
 
-    for (const registro of registros) {
-      if (sentIds.has(registro.id)) continue;
-
-      setSendingIds((prev) => new Set(prev).add(registro.id));
-      try {
-        await sendToDashboard(registro);
-        setSentIds((prev) => new Set(prev).add(registro.id));
-        successCount++;
-      } catch (error) {
-        console.error('Erro ao enviar registro:', registro.id, error);
-        errorCount++;
-      } finally {
-        setSendingIds((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(registro.id);
-          return newSet;
-        });
-      }
+    if (pendingIds.length === 0) {
+      alert('Todos os registros já foram enviados ao Dashboard.');
+      return;
     }
 
-    setBulkSending(false);
-    alert(`Sincronização concluída!\n${successCount} enviados com sucesso\n${errorCount} com erro`);
+    setBulkSending(true);
+    setSendingIds((prev) => new Set([...prev, ...pendingIds]));
+
+    try {
+      const response = await fetch('/api/dashboard-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registro_ids: pendingIds }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao enviar registros para o Dashboard');
+      }
+
+      const syncedIds: number[] = Array.isArray(data.synced_ids) ? data.synced_ids : [];
+      setSentIds((prev) => new Set([...prev, ...syncedIds]));
+
+      const errorCount = pendingIds.length - syncedIds.length;
+      alert(
+        `Sincronização concluída!\n${syncedIds.length} enviados com sucesso\n${errorCount} com erro`
+      );
+    } catch (error) {
+      console.error('Erro na sincronização em lote:', error);
+      alert(error instanceof Error ? error.message : 'Erro ao enviar para o Dashboard');
+    } finally {
+      setBulkSending(false);
+      setSendingIds((prev) => {
+        const next = new Set(prev);
+        pendingIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
   };
 
   const filteredRegistros = registros.filter(
@@ -248,7 +267,11 @@ export default function HistoricoPage() {
           </div>
           <Button
             onClick={handleBulkSync}
-            disabled={bulkSending || registros.length === 0}
+            disabled={
+              bulkSending ||
+              registros.length === 0 ||
+              registros.every((registro) => sentIds.has(registro.id))
+            }
             className="gap-2"
           >
             {bulkSending ? (
@@ -259,7 +282,9 @@ export default function HistoricoPage() {
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                Enviar todos ao Dashboard
+                {registros.length > 0 && registros.every((registro) => sentIds.has(registro.id))
+                  ? 'Todos enviados'
+                  : 'Enviar todos ao Dashboard'}
               </>
             )}
           </Button>
@@ -311,7 +336,7 @@ export default function HistoricoPage() {
                     {sentIds.has(registro.id) ? (
                       <div className="flex items-center gap-1 text-green-600 px-2">
                         <CheckCircle2 className="w-4 h-4" />
-                        <span className="text-xs">Enviado</span>
+                        <span className="text-xs">Enviado ao Dashboard</span>
                       </div>
                     ) : (
                       <Button
