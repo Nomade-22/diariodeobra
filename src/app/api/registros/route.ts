@@ -1,12 +1,10 @@
-import { NextResponse, after, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 import sql from "@/app/api/utils/sql";
 import { readJson, rows, toNumberOrNull, toStringOrNull } from "@/app/api/_helpers/obra-auth";
 import {
-  calculateHoursWorked,
   loadFuncionariosByRegistro,
   parseFuncionarioIds,
-  sendToDashboard,
   type RegistroRow,
 } from "@/app/api/_helpers/registros";
 
@@ -78,42 +76,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create registro" }, { status: 500 });
   }
 
-  // Link funcionarios and collect their names for the dashboard push.
-  const funcionarioNames: string[] = [];
+  // O envio ao Dashboard é manual pelo Histórico. Aqui salvamos apenas
+  // o registro local e os vínculos da equipe.
   for (const funcId of funcionario_ids) {
     await sql`
       INSERT INTO registro_funcionarios (registro_id, funcionario_id)
       VALUES (${registro.id}, ${funcId})
     `;
-
-    const found = rows<{ nome: string }>(
-      await sql`SELECT nome FROM funcionarios WHERE id = ${funcId} LIMIT 1`
-    );
-    if (found[0]) funcionarioNames.push(found[0].nome);
-  }
-
-  // Mirror the entry into the external Multprest dashboard when an OF is linked.
-  // The worker did this without awaiting; `after()` is the Next equivalent that
-  // keeps the work alive past the response instead of having it dropped.
-  if (of_number) {
-    const hoursWorked = calculateHoursWorked(chegada ?? "", saida ?? "");
-    const entryDate = data ?? "";
-    const names = [...funcionarioNames];
-    const registroId = registro.id;
-
-    after(async () => {
-      for (const employeeName of names) {
-        await sendToDashboard({
-          of_number,
-          employee_name: employeeName,
-          entry_date: entryDate,
-          hours_worked: hoursWorked,
-          description: trabalho ?? "",
-          notes: observacoes ?? "",
-          external_id: registroId,
-        });
-      }
-    });
   }
 
   return NextResponse.json({ id: registro.id }, { status: 201 });
